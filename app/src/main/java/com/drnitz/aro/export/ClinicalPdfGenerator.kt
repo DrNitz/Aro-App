@@ -8,6 +8,9 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
+import android.text.Layout
+import android.text.StaticLayout
+import android.text.TextPaint
 import androidx.core.content.FileProvider
 import com.drnitz.aro.domain.DomainResult
 import com.drnitz.aro.domain.calculation.bodyMassIndex
@@ -93,6 +96,19 @@ object ClinicalPdfGenerator {
             }
         }
 
+        fun buildStaticLayout(
+            text: String,
+            paint: Paint,
+            width: Int,
+        ): StaticLayout {
+            val textPaint = TextPaint(paint)
+            return StaticLayout.Builder.obtain(text, 0, text.length, textPaint, width.coerceAtLeast(10))
+                .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                .setLineSpacing(0f, 1.15f)
+                .setIncludePad(false)
+                .build()
+        }
+
         // --- Document Header ---
         paintFill.color = Color.rgb(15, 23, 42) // Dark Banner
         canvas.drawRoundRect(RectF(MARGIN_LEFT, cursorY, MARGIN_RIGHT, cursorY + 70f), 8f, 8f, paintFill)
@@ -159,10 +175,6 @@ object ClinicalPdfGenerator {
             canvas.drawText("No patient vitals recorded during this time period.", MARGIN_LEFT, cursorY + 12f, paintSecondary)
             cursorY += 28f
         } else {
-            // Table Header
-            paintFill.color = Color.rgb(241, 245, 249) // Slate 100
-            canvas.drawRect(MARGIN_LEFT, cursorY, MARGIN_RIGHT, cursorY + 18f, paintFill)
-
             val vColDate = MARGIN_LEFT + 6f
             val vColBP = MARGIN_LEFT + 85f
             val vColStage = MARGIN_LEFT + 180f
@@ -170,21 +182,31 @@ object ClinicalPdfGenerator {
             val vColGlucose = MARGIN_LEFT + 340f
             val vColOther = MARGIN_LEFT + 430f
 
-            paintText.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            paintText.textSize = 8.5f
-            canvas.drawText("DATE & TIME", vColDate, cursorY + 12f, paintText)
-            canvas.drawText("BP (SYS/DIA)", vColBP, cursorY + 12f, paintText)
-            canvas.drawText("AHA STAGE (MAP)", vColStage, cursorY + 12f, paintText)
-            canvas.drawText("PULSE", vColPulse, cursorY + 12f, paintText)
-            canvas.drawText("GLUCOSE", vColGlucose, cursorY + 12f, paintText)
-            canvas.drawText("SPO2 / KETONES", vColOther, cursorY + 12f, paintText)
-            cursorY += 18f
+            fun drawVitalsTableHeader() {
+                paintFill.color = Color.rgb(241, 245, 249) // Slate 100
+                canvas.drawRect(MARGIN_LEFT, cursorY, MARGIN_RIGHT, cursorY + 18f, paintFill)
+                paintText.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                paintText.textSize = 8.5f
+                canvas.drawText("DATE & TIME", vColDate, cursorY + 12f, paintText)
+                canvas.drawText("BP (SYS/DIA)", vColBP, cursorY + 12f, paintText)
+                canvas.drawText("AHA STAGE (MAP)", vColStage, cursorY + 12f, paintText)
+                canvas.drawText("PULSE", vColPulse, cursorY + 12f, paintText)
+                canvas.drawText("GLUCOSE", vColGlucose, cursorY + 12f, paintText)
+                canvas.drawText("SPO2 / KETONES", vColOther, cursorY + 12f, paintText)
+                cursorY += 18f
+                paintText.typeface = Typeface.DEFAULT
+                paintText.textSize = 8f
+            }
 
-            paintText.typeface = Typeface.DEFAULT
-            paintText.textSize = 8f
+            drawVitalsTableHeader()
 
-            data.vitals.take(15).forEachIndexed { index, v ->
+            data.vitals.forEachIndexed { index, v ->
+                val prevPage = pageNumber
                 checkPageBreak(20f)
+                if (pageNumber != prevPage) {
+                    drawVitalsTableHeader()
+                }
+
                 if (index % 2 == 1) {
                     paintFill.color = Color.rgb(248, 250, 252)
                     canvas.drawRect(MARGIN_LEFT, cursorY, MARGIN_RIGHT, cursorY + 16f, paintFill)
@@ -268,10 +290,16 @@ object ClinicalPdfGenerator {
             paintText.typeface = Typeface.DEFAULT
             cursorY += 14f
 
-            data.clinicalFindings.take(4).forEach { finding ->
-                checkPageBreak(16f)
-                canvas.drawText("• $finding", MARGIN_LEFT + 8f, cursorY, paintSecondary)
-                cursorY += 13f
+            val findingsWidth = (MARGIN_RIGHT - MARGIN_LEFT - 12f).toInt().coerceAtLeast(100)
+            data.clinicalFindings.forEach { finding ->
+                val layout = buildStaticLayout("• $finding", paintSecondary, findingsWidth)
+                val layoutHeight = layout.height.toFloat()
+                checkPageBreak(layoutHeight + 4f)
+                canvas.save()
+                canvas.translate(MARGIN_LEFT + 8f, cursorY)
+                layout.draw(canvas)
+                canvas.restore()
+                cursorY += layoutHeight + 4f
             }
             cursorY += 8f
         }
@@ -285,32 +313,74 @@ object ClinicalPdfGenerator {
             canvas.drawText("No doctor consultations logged during this period.", MARGIN_LEFT, cursorY + 12f, paintSecondary)
             cursorY += 28f
         } else {
-            data.consultations.take(6).forEach { doc ->
-                checkPageBreak(75f)
+            val cardInnerWidth = (MARGIN_RIGHT - MARGIN_LEFT - 20f).toInt().coerceAtLeast(100)
+            val paintDocHeader = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.rgb(15, 23, 42)
+                textSize = 9.5f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            }
 
-                paintFill.color = Color.rgb(248, 250, 252)
-                canvas.drawRoundRect(RectF(MARGIN_LEFT, cursorY, MARGIN_RIGHT, cursorY + 68f), 6f, 6f, paintFill)
-                canvas.drawRoundRect(RectF(MARGIN_LEFT, cursorY, MARGIN_RIGHT, cursorY + 68f), 6f, 6f, paintStroke)
-
+            data.consultations.forEach { doc ->
                 val cDateStr = doc.date.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
-                paintText.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                paintText.textSize = 9.5f
-                canvas.drawText("${doc.doctorName} (${doc.specialty}) • $cDateStr", MARGIN_LEFT + 10f, cursorY + 16f, paintText)
-                paintText.typeface = Typeface.DEFAULT
-                paintText.textSize = 8.5f
-
-                canvas.drawText("Reason: ${doc.reasonForVisit}", MARGIN_LEFT + 10f, cursorY + 30f, paintSecondary)
-                canvas.drawText("Assessment: ${doc.diagnosisNotes}", MARGIN_LEFT + 10f, cursorY + 42f, paintSecondary)
+                val titleLayout = buildStaticLayout(
+                    "${doc.doctorName} (${doc.specialty}) • $cDateStr",
+                    paintDocHeader,
+                    cardInnerWidth,
+                )
+                val reasonLayout = buildStaticLayout("Reason: ${doc.reasonForVisit}", paintSecondary, cardInnerWidth)
+                val assessmentLayout = buildStaticLayout("Assessment: ${doc.diagnosisNotes}", paintSecondary, cardInnerWidth)
 
                 val planStr = buildString {
                     if (doc.prescribedMedications.isNotBlank()) append("Rx: ${doc.prescribedMedications}  ")
                     if (doc.followUpPlan.isNotBlank()) append("• Plan: ${doc.followUpPlan}")
                 }
-                if (planStr.isNotBlank()) {
-                    canvas.drawText(planStr.take(100), MARGIN_LEFT + 10f, cursorY + 56f, paintText)
+                val planLayout = if (planStr.isNotBlank()) {
+                    buildStaticLayout(planStr, paintText, cardInnerWidth)
+                } else null
+
+                val totalInnerHeight = 8f +
+                    titleLayout.height + 4f +
+                    reasonLayout.height + 4f +
+                    assessmentLayout.height +
+                    (if (planLayout != null) 4f + planLayout.height else 0f) +
+                    8f
+
+                val cardHeight = totalInnerHeight
+                checkPageBreak(cardHeight + 8f)
+
+                paintFill.color = Color.rgb(248, 250, 252)
+                canvas.drawRoundRect(RectF(MARGIN_LEFT, cursorY, MARGIN_RIGHT, cursorY + cardHeight), 6f, 6f, paintFill)
+                canvas.drawRoundRect(RectF(MARGIN_LEFT, cursorY, MARGIN_RIGHT, cursorY + cardHeight), 6f, 6f, paintStroke)
+
+                var cardCursorY = cursorY + 8f
+
+                canvas.save()
+                canvas.translate(MARGIN_LEFT + 10f, cardCursorY)
+                titleLayout.draw(canvas)
+                canvas.restore()
+                cardCursorY += titleLayout.height + 4f
+
+                canvas.save()
+                canvas.translate(MARGIN_LEFT + 10f, cardCursorY)
+                reasonLayout.draw(canvas)
+                canvas.restore()
+                cardCursorY += reasonLayout.height + 4f
+
+                canvas.save()
+                canvas.translate(MARGIN_LEFT + 10f, cardCursorY)
+                assessmentLayout.draw(canvas)
+                canvas.restore()
+                cardCursorY += assessmentLayout.height
+
+                if (planLayout != null) {
+                    cardCursorY += 4f
+                    canvas.save()
+                    canvas.translate(MARGIN_LEFT + 10f, cardCursorY)
+                    planLayout.draw(canvas)
+                    canvas.restore()
                 }
 
-                cursorY += 76f
+                cursorY += cardHeight + 8f
             }
         }
 
