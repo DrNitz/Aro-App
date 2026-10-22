@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+    Android 12+ data extraction rules.
+
+    Both cloud backup and device-to-device transfer exclude all app data: weight,
+    body measurements, food and workout logs are personal health records that should
+    never leave the device without the user explicitly exporting them.
+
+    See https://developer.android.com/about/versions/12/backup-restore#xml-changes
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
+    </device-transfer>
+</data-extraction-rules>
