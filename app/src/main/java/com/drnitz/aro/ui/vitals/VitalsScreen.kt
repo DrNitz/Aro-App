@@ -222,6 +222,7 @@ fun VitalsScreen(
 
     if (showLogVitalsDialog) {
         LogVitalsDialog(
+            today = vm.today,
             onDismiss = { showLogVitalsDialog = false },
             onSave = { entry ->
                 vm.logVitals(entry)
@@ -232,6 +233,7 @@ fun VitalsScreen(
 
     if (showLogConsultDialog) {
         LogConsultationDialog(
+            today = vm.today,
             onDismiss = { showLogConsultDialog = false },
             onSave = { consult ->
                 vm.logConsultation(consult)
@@ -809,6 +811,7 @@ private fun PdfExportTabContent(
 
 @Composable
 private fun LogVitalsDialog(
+    today: LocalDate = LocalDate.now(),
     onDismiss: () -> Unit,
     onSave: (VitalsEntry) -> Unit,
 ) {
@@ -983,7 +986,7 @@ private fun LogVitalsDialog(
                     val temp = tempText.toDoubleOrNull()?.coerceIn(30.0, 45.0)
 
                     val entry = VitalsEntry(
-                        date = LocalDate.now(),
+                        date = today,
                         bloodPressure = bp,
                         bloodGlucose = bg,
                         spo2Percent = spo2,
@@ -1006,6 +1009,7 @@ private fun LogVitalsDialog(
 
 @Composable
 private fun LogConsultationDialog(
+    today: LocalDate = LocalDate.now(),
     onDismiss: () -> Unit,
     onSave: (DoctorConsultation) -> Unit,
 ) {
@@ -1100,7 +1104,7 @@ private fun LogConsultationDialog(
                 onClick = {
                     if (doctorName.isNotBlank() && reason.isNotBlank()) {
                         val consult = DoctorConsultation(
-                            date = LocalDate.now(),
+                            date = today,
                             doctorName = doctorName.trim(),
                             specialty = specialty.trim(),
                             reasonForVisit = reason.trim(),

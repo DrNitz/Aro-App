@@ -25,7 +25,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 val pendingResult = goAsync()
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
-                        val today = LocalDate.now()
+                        val today = app?.dateProvider?.today() ?: LocalDate.now()
                         repository.addWater(today, 250)
                         NotificationHelper.cancelNotification(context, notificationId)
                         NotificationHelper.showFeedbackNotification(

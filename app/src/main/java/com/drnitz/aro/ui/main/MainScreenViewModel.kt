@@ -106,14 +106,17 @@ class MainScreenViewModel(
                 val profile = profileRaw ?: UserProfile.DEFAULT
                 val energyPlan = when (val res = EnergyPlanner.plan(profile)) {
                     is DomainResult.Success -> res.value
-                    is DomainResult.Failure -> EnergyPlan(
-                        bmr = 1750,
-                        tdee = 2400,
-                        goal = profile.goal,
-                        goalAdjustment = profile.goal.calorieAdjustment,
-                        targetCalories = 2150,
-                        macros = MacroTargets(2150, 160, 215, 65, 30),
-                    )
+                    is DomainResult.Failure -> when (val defaultRes = EnergyPlanner.plan(UserProfile.DEFAULT)) {
+                        is DomainResult.Success -> defaultRes.value
+                        is DomainResult.Failure -> EnergyPlan(
+                            bmr = 1750,
+                            tdee = 2400,
+                            goal = profile.goal,
+                            goalAdjustment = profile.goal.calorieAdjustment,
+                            targetCalories = 2150,
+                            macros = MacroTargets(2150, 160, 215, 65, 30),
+                        )
+                    }
                 }
 
                 val burned = diaryDay.caloriesBurned(profile.weightKg)

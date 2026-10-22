@@ -15,12 +15,15 @@ import com.drnitz.aro.domain.model.UserProfile
 import com.drnitz.aro.domain.model.VitalsEntry
 import com.drnitz.aro.export.ClinicalPdfGenerator
 import com.drnitz.aro.export.ClinicalReportData
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -110,6 +113,8 @@ class VitalsViewModel(
         }
     }
 
+    val today: LocalDate get() = dateProvider.today()
+
     fun exportPdf(context: Context, rangeDays: Int, onComplete: (File) -> Unit) {
         viewModelScope.launch {
             val today = dateProvider.today()
@@ -118,7 +123,7 @@ class VitalsViewModel(
             val vitalsInRange = repository.getVitalsInRange(fromDate, today)
             val consultsInRange = repository.getConsultationsInRange(fromDate, today)
 
-            val dayTotalsInRange = repository.observeTotalsInRange(fromDate, today).stateIn(viewModelScope).value
+            val dayTotalsInRange = repository.observeTotalsInRange(fromDate, today).first()
             val avgCal = if (dayTotalsInRange.isNotEmpty()) {
                 dayTotalsInRange.map { it.totals.calories.toInt() }.average().toInt()
             } else 2000
@@ -158,6 +163,24 @@ class VitalsViewModel(
                 "Last $rangeDays Days (${fromDate.format(DateTimeFormatter.ofPattern("MMM d"))} – ${today.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))})"
             } else "All Recorded History"
 
+            val rangeNutrientTotals = if (dayTotalsInRange.isNotEmpty()) {
+                NutrientTotals.of(
+                    NutrientKey.CALORIES to avgCal.toDouble(),
+                    NutrientKey.PROTEIN to avgProt,
+                    NutrientKey.CARBS to avgCarb,
+                    NutrientKey.FAT to avgFat,
+                    NutrientKey.FIBER to avgFiber,
+                    NutrientKey.SODIUM to avgSod,
+                    NutrientKey.POTASSIUM to avgPot,
+                )
+            } else null
+
+            val findings = if (rangeNutrientTotals != null) {
+                ClinicalAuditEngine.assess(rangeNutrientTotals).findings.map { it.message }
+            } else {
+                currentState?.clinicalFindings ?: emptyList()
+            }
+
             val reportData = ClinicalReportData(
                 profile = currentState?.profile ?: UserProfile.DEFAULT,
                 dateRangeText = rangeText,
@@ -172,10 +195,12 @@ class VitalsViewModel(
                 molarNaKRatio = naK,
                 sodiumMg = avgSod,
                 potassiumMg = avgPot,
-                clinicalFindings = currentState?.clinicalFindings ?: emptyList(),
+                clinicalFindings = findings,
             )
 
-            val file = ClinicalPdfGenerator.generate(context, reportData)
+            val file = withContext(Dispatchers.IO) {
+                ClinicalPdfGenerator.generate(context, reportData)
+            }
             onComplete(file)
         }
     }

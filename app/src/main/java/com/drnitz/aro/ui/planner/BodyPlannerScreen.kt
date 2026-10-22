@@ -316,6 +316,29 @@ private fun BodyPlannerTabContent(
                         }
                     }
 
+                    if (profile.validationErrors().isNotEmpty()) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.errorContainer,
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text(
+                                    text = "Profile validation warning:",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                )
+                                profile.validationErrors().forEach { err ->
+                                    Text(
+                                        text = "• $err",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     // Sex Selector
                     Row(
                         modifier = Modifier.fillMaxWidth(),

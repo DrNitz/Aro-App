@@ -94,6 +94,21 @@ interface FoodLibraryDao {
         upsertFavorite(food)
     }
 
+    /**
+     * Atomically toggles the favorite status of a food in a single transaction,
+     * eliminating race conditions between read and write.
+     */
+    @Transaction
+    suspend fun toggleFavorite(food: FavoriteFoodEntity): Boolean {
+        return if (isFavorite(food.foodId)) {
+            deleteFavorite(food.foodId)
+            false
+        } else {
+            starFavorite(food)
+            true
+        }
+    }
+
     @Upsert
     suspend fun upsertRecent(food: RecentFoodEntity)
 

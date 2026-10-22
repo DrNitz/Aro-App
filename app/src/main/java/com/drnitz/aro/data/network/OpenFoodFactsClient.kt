@@ -25,21 +25,20 @@ import java.net.URLEncoder
  */
 class OpenFoodFactsClient(
     private val userAgent: String = USER_AGENT,
-    private val timeoutMs: Int = 8000,
+    private val timeoutMs: Int = 4000,
 ) {
     companion object {
         const val USER_AGENT = "AroHealthApp/1.0 (https://github.com/DrNitz/Aro; contact@arohealth.org)"
         private val BARCODE_URLS = listOf(
-            "https://world.openfoodfacts.net/api/v0/product/%s.json",
-            "https://world.openfoodfacts.org/api/v0/product/%s.json",
-            "https://world.openfoodfacts.net/api/v2/product/%s.json",
             "https://world.openfoodfacts.org/api/v2/product/%s.json",
+            "https://world.openfoodfacts.org/api/v0/product/%s.json",
         )
         private val SEARCH_URLS = listOf(
-            "https://world.openfoodfacts.net/cgi/search.pl?search_terms=%s&search_simple=1&action=process&json=1&page_size=%d",
             "https://world.openfoodfacts.org/cgi/search.pl?search_terms=%s&search_simple=1&action=process&json=1&page_size=%d",
         )
     }
+
+    private val barcodeCache = java.util.concurrent.ConcurrentHashMap<String, CuratedFoodItem>()
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -50,6 +49,9 @@ class OpenFoodFactsClient(
         val clean = barcode.trim()
         if (clean.isBlank()) return@withContext null
 
+        val cached = barcodeCache[clean]
+        if (cached != null) return@withContext cached
+
         for (template in BARCODE_URLS) {
             try {
                 val urlStr = String.format(template, URLEncoder.encode(clean, "UTF-8"))
@@ -59,7 +61,10 @@ class OpenFoodFactsClient(
                 val product = root["product"]?.jsonObject
                 if (status == 1 && product != null) {
                     val normalized = normalizeOffProduct(product, clean)
-                    if (normalized != null) return@withContext normalized
+                    if (normalized != null) {
+                        barcodeCache[clean] = normalized
+                        return@withContext normalized
+                    }
                 }
             } catch (_: Exception) {
                 // Try next endpoint
@@ -137,23 +142,49 @@ class OpenFoodFactsClient(
         val sugar = extractDouble(nutriments, "sugars_100g") ?: extractDouble(nutriments, "sugars") ?: 0.0
 
         // Sodium (convert g to mg if needed)
-        val sodiumRaw = extractDouble(nutriments, "sodium_100g")
-        val saltRaw = extractDouble(nutriments, "salt_100g")
+        val sodiumRaw = extractDouble(nutriments, "sodium_100g") ?: extractDouble(nutriments, "sodium")
+        val saltRaw = extractDouble(nutriments, "salt_100g") ?: extractDouble(nutriments, "salt")
+        val sodiumUnit = nutriments["sodium_unit"]?.jsonPrimitive?.content?.lowercase()
         val sodium = when {
-            sodiumRaw != null -> sodiumRaw * 1000.0
-            saltRaw != null -> saltRaw * 400.0 // salt is ~40% sodium
+            sodiumRaw != null -> when (sodiumUnit) {
+                "mg" -> sodiumRaw
+                "g" -> sodiumRaw * 1000.0
+                else -> if (sodiumRaw > 20.0) sodiumRaw else sodiumRaw * 1000.0
+            }
+            saltRaw != null -> saltRaw * 400.0 // salt is ~40% sodium (salt g to sodium mg: salt_g * 0.4 * 1000 = * 400)
             else -> 0.0
         }
 
         // Micronutrients (mg)
-        val potassiumRaw = extractDouble(nutriments, "potassium_100g") ?: extractDouble(nutriments, "potassium") ?: 0.0
-        val potassium = if (potassiumRaw > 20.0) potassiumRaw else potassiumRaw * 1000.0
+        val potassiumRaw = extractDouble(nutriments, "potassium_100g") ?: extractDouble(nutriments, "potassium")
+        val potassiumUnit = nutriments["potassium_unit"]?.jsonPrimitive?.content?.lowercase()
+        val potassium = when {
+            potassiumRaw == null -> 0.0
+            potassiumUnit == "mg" -> potassiumRaw
+            potassiumUnit == "g" -> potassiumRaw * 1000.0
+            potassiumRaw > 20.0 -> potassiumRaw
+            else -> potassiumRaw * 1000.0
+        }
 
-        val calciumRaw = extractDouble(nutriments, "calcium_100g") ?: extractDouble(nutriments, "calcium") ?: 0.0
-        val calcium = if (calciumRaw > 20.0) calciumRaw else calciumRaw * 1000.0
+        val calciumRaw = extractDouble(nutriments, "calcium_100g") ?: extractDouble(nutriments, "calcium")
+        val calciumUnit = nutriments["calcium_unit"]?.jsonPrimitive?.content?.lowercase()
+        val calcium = when {
+            calciumRaw == null -> 0.0
+            calciumUnit == "mg" -> calciumRaw
+            calciumUnit == "g" -> calciumRaw * 1000.0
+            calciumRaw > 20.0 -> calciumRaw
+            else -> calciumRaw * 1000.0
+        }
 
-        val magnesiumRaw = extractDouble(nutriments, "magnesium_100g") ?: extractDouble(nutriments, "magnesium") ?: 0.0
-        val magnesium = if (magnesiumRaw > 20.0) magnesiumRaw else magnesiumRaw * 1000.0
+        val magnesiumRaw = extractDouble(nutriments, "magnesium_100g") ?: extractDouble(nutriments, "magnesium")
+        val magnesiumUnit = nutriments["magnesium_unit"]?.jsonPrimitive?.content?.lowercase()
+        val magnesium = when {
+            magnesiumRaw == null -> 0.0
+            magnesiumUnit == "mg" -> magnesiumRaw
+            magnesiumUnit == "g" -> magnesiumRaw * 1000.0
+            magnesiumRaw > 20.0 -> magnesiumRaw
+            else -> magnesiumRaw * 1000.0
+        }
 
         val code = product["code"]?.jsonPrimitive?.content ?: fallbackCode ?: ""
         val id = "off-${code.ifEmpty { java.util.UUID.randomUUID().toString() }}"

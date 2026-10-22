@@ -2,6 +2,8 @@ package com.drnitz.aro
 
 import android.app.Application
 import com.drnitz.aro.data.db.AroDatabase
+import com.drnitz.aro.data.db.DateProvider
+import com.drnitz.aro.data.db.SystemDateProvider
 import com.drnitz.aro.data.library.OfflineExerciseLibrary
 import com.drnitz.aro.data.library.OfflineFoodLibrary
 import com.drnitz.aro.data.network.OpenFoodFactsClient
@@ -18,6 +20,7 @@ import kotlinx.coroutines.launch
 
 class AroApplication : Application() {
     val database: AroDatabase by lazy { AroDatabase.get(this) }
+    val dateProvider: DateProvider by lazy { SystemDateProvider() }
     val repository: AroRepository by lazy { RoomAroRepository(database) }
     val exerciseLibrary: OfflineExerciseLibrary by lazy { OfflineExerciseLibrary(this) }
     val foodLibrary: OfflineFoodLibrary by lazy { OfflineFoodLibrary(this) }

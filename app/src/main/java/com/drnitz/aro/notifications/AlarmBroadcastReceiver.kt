@@ -29,14 +29,10 @@ class AlarmBroadcastReceiver : BroadcastReceiver() {
             }
             AroNotificationScheduler.TYPE_MEDICATION -> {
                 val medId = intent.getStringExtra(NotificationHelper.EXTRA_MED_ID) ?: ""
-                val medName = intent.getStringExtra(NotificationHelper.EXTRA_MED_NAME) ?: "Medication"
-                val medDosage = intent.getStringExtra(NotificationHelper.EXTRA_MED_DOSAGE) ?: ""
-                NotificationHelper.showMedicationNotification(context, medId, medName, medDosage)
-
-                // Reschedule for next day if not a snooze
                 val prefs = NotificationPreferences(context)
                 val med = prefs.getMedicationReminders().find { it.id == medId && it.enabled }
                 if (med != null) {
+                    NotificationHelper.showMedicationNotification(context, med.id, med.name, med.dosage)
                     val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? android.app.AlarmManager
                     if (alarmManager != null) {
                         AroNotificationScheduler.scheduleSingleMedication(context, alarmManager, med)

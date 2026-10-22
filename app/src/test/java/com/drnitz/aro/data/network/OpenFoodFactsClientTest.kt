@@ -92,4 +92,38 @@ class OpenFoodFactsClientTest {
         assertEquals(2.5, food.fat, 0.01)
         assertEquals(600.0, food.sodium, 1.0) // 1.5g salt * 400 = 600mg sodium
     }
+
+    @Test
+    fun normalizeOffProduct_respectsExplicitMilligramUnits() {
+        val sampleJson = """
+        {
+            "code": "123456789012",
+            "product_name": "Mineral Water",
+            "nutriments": {
+                "energy-kcal_100g": 0.0,
+                "proteins_100g": 0.0,
+                "carbohydrates_100g": 0.0,
+                "fat_100g": 0.0,
+                "sodium_100g": 12.0,
+                "sodium_unit": "mg",
+                "calcium_100g": 8.5,
+                "calcium_unit": "mg",
+                "magnesium_100g": 2.5,
+                "magnesium_unit": "mg",
+                "potassium_100g": 1.0,
+                "potassium_unit": "mg"
+            }
+        }
+        """.trimIndent()
+
+        val productObj = json.parseToJsonElement(sampleJson).jsonObject
+        val food = client.normalizeOffProduct(productObj, fallbackCode = null)
+
+        assertNotNull(food)
+        food!!
+        assertEquals(12.0, food.sodium, 0.01)
+        assertEquals(8.5, food.calcium, 0.01)
+        assertEquals(2.5, food.magnesium, 0.01)
+        assertEquals(1.0, food.potassium, 0.01)
+    }
 }

@@ -124,7 +124,9 @@ class RoomAroRepository(
     }
 
     override suspend fun updateFood(entry: FoodLogEntry, date: LocalDate) {
-        diaryDao.upsertFood(entry.toEntity(date.toEpochDay(), System.currentTimeMillis()))
+        val existing = diaryDao.findFood(entry.id)
+        val createdAt = existing?.createdAt ?: System.currentTimeMillis()
+        diaryDao.upsertFood(entry.toEntity(date.toEpochDay(), createdAt))
     }
 
     override suspend fun deleteFood(id: String) {
@@ -182,11 +184,7 @@ class RoomAroRepository(
         foodLibraryDao.observeRecents().map { rows -> rows.map { it.toCuratedFoodItem() } }
 
     override suspend fun toggleFavoriteFood(food: CuratedFoodItem) {
-        if (foodLibraryDao.isFavorite(food.id)) {
-            foodLibraryDao.deleteFavorite(food.id)
-        } else {
-            foodLibraryDao.starFavorite(food.toFavoriteEntity())
-        }
+        foodLibraryDao.toggleFavorite(food.toFavoriteEntity())
     }
 
     override suspend fun recordFoodUsage(food: CuratedFoodItem, grams: Double) {
