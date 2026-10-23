@@ -139,8 +139,8 @@ class FoodLibraryDaoTest : DatabaseTestBase() {
             ),
         )
 
-        assertEquals(1, dao.searchCustomFoods("homa").size)
-        assertEquals(1, dao.searchCustomFoods("HOMA").size)
+        assertEquals(1, dao.searchCustomFoods("home").size)
+        assertEquals(1, dao.searchCustomFoods("HOME").size)
         assertEquals(1, dao.searchCustomFoods("CHICK").size)
         assertEquals(0, dao.searchCustomFoods("zzz").size)
     }
@@ -148,7 +148,7 @@ class FoodLibraryDaoTest : DatabaseTestBase() {
     /**
      * Regression guard: SQLite's `LIKE` is case-insensitive by default, but adding an
      * explicit `COLLATE NOCASE` to the expression **flips it to case-sensitive** per the
-     * SQLite spec. That mistake made "homa" stop matching "Homemade" and was only
+     * SQLite spec. That mistake made "home" stop matching "Homemade" and was only
      * visible against a real SQLite engine.
      */
     @Test

@@ -38,7 +38,7 @@ interface FoodLibraryDao {
      * Note the absence of `COLLATE NOCASE` on the WHERE clause: SQLite's `LIKE` is
      * already case-insensitive for ASCII, and adding an explicit NOCASE collating
      * sequence *silently flips LIKE to case-sensitive* per the SQLite spec. An
-     * instrumented test caught exactly that — "homa" stopped matching "Homemade".
+     * instrumented test caught exactly that — "home" stopped matching "Homemade".
      */
     @Query("SELECT * FROM custom_foods WHERE name LIKE :prefix || '%' ORDER BY name COLLATE NOCASE ASC")
     suspend fun searchCustomFoods(prefix: String): List<CustomFoodEntity>
