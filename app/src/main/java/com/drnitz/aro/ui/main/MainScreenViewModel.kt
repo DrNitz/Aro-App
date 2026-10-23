@@ -61,6 +61,8 @@ sealed interface MainScreenUiState {
         val activeFast: ActiveFast?,
         val targetWaterMl: Int,
         val coverage: DailyCoverage,
+        /** Number of individual drinks logged on [selectedDate]. */
+        val waterLogCount: Int = 0,
         val favoriteFoods: List<CuratedFoodItem> = emptyList(),
         val recentFoods: List<CuratedFoodItem> = emptyList(),
         /** Device "today", captured with the state so the calendar and future checks agree. */
@@ -102,7 +104,8 @@ class MainScreenViewModel(
                 repository.observeProfileSettings(),
                 repository.observeDiaryDay(date),
                 repository.observeActiveFast(),
-            ) { profileRaw, settingsRaw, diaryDay, activeFast ->
+                repository.observeWaterLogsForDate(date),
+            ) { profileRaw, settingsRaw, diaryDay, activeFast, waterLogs ->
                 val profile = profileRaw ?: UserProfile.DEFAULT
                 val energyPlan = when (val res = EnergyPlanner.plan(profile)) {
                     is DomainResult.Success -> res.value
@@ -141,6 +144,7 @@ class MainScreenViewModel(
                     activeFast = activeFast,
                     targetWaterMl = settingsRaw?.targetWaterMl ?: DEFAULT_WATER_TARGET_ML,
                     coverage = coverage,
+                    waterLogCount = waterLogs.size,
                     today = today,
                 )
             }

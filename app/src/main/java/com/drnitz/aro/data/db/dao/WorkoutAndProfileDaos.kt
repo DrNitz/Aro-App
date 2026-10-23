@@ -125,6 +125,10 @@ interface FastingDao {
     @Query("UPDATE fasting_sessions SET ended_at = :endedAt WHERE ended_at IS NULL")
     suspend fun closeAllOpenSessions(endedAt: Long): Int
 
+    /** History rows can be removed; the running session cannot. */
+    @Query("DELETE FROM fasting_sessions WHERE id = :id AND ended_at IS NOT NULL")
+    suspend fun deleteCompletedSession(id: String): Int
+
     @Query("SELECT * FROM fasting_sessions ORDER BY started_at DESC LIMIT :limit")
     fun observeRecentSessions(limit: Int): Flow<List<FastingSessionEntity>>
 }

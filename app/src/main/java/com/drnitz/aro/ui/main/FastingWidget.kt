@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Timer
@@ -58,6 +59,7 @@ internal fun FastingWidget(
     onOpenStartFast: () -> Unit,
     onEndFast: () -> Unit,
     onOpenReminders: () -> Unit = {},
+    onOpenHistory: () -> Unit = {},
 ) {
     var currentTime by remember(activeFast?.id) { mutableStateOf(Instant.now()) }
     LaunchedEffect(activeFast?.id) {
@@ -234,6 +236,28 @@ internal fun FastingWidget(
                         style = MaterialTheme.typography.labelSmall,
                     )
                 }
+            }
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            TextButton(
+                onClick = onOpenHistory,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = AroTheme.macroColors.fasting,
+                ),
+                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(26.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.History,
+                    contentDescription = null,
+                    tint = AroTheme.macroColors.fasting.copy(alpha = 0.8f),
+                    modifier = Modifier.size(13.dp),
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("View fasting log", style = MaterialTheme.typography.labelSmall)
             }
         }
     }

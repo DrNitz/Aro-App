@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material.icons.filled.Tune
@@ -57,6 +58,7 @@ fun GoalsBodyScreen(
     onOpenBodyPlanner: () -> Unit,
     onOpenVitals: () -> Unit,
     onOpenDataManagement: () -> Unit = {},
+    onOpenIntakeHistory: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val bmi = bodyMassIndex(profile.weightKg, profile.heightCm).valueOrNull()
@@ -221,6 +223,27 @@ fun GoalsBodyScreen(
                 title = "Vitals & Doctor Consults",
                 subtitle = "Blood pressure, glucose, ketones, SpO2 and visit notes",
                 onClick = onOpenVitals,
+            )
+        }
+
+        item {
+            Text(
+                text = "DAILY LOGS",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 1.2.sp,
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp, top = 6.dp),
+            )
+        }
+        item {
+            DestinationCard(
+                icon = Icons.Default.History,
+                accent = AroTheme.macroColors.water,
+                title = "Water & Fasting History",
+                subtitle = "Every drink with its time, and every fast with its duration",
+                onClick = onOpenIntakeHistory,
             )
         }
 

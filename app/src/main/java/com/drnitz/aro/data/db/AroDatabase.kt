@@ -31,6 +31,7 @@ import com.drnitz.aro.data.db.entity.PlanSeriesEntity
 import com.drnitz.aro.data.db.entity.ProfileEntity
 import com.drnitz.aro.data.db.entity.RecentFoodEntity
 import com.drnitz.aro.data.db.entity.VitalsEntryEntity
+import com.drnitz.aro.data.db.entity.WaterLogEntity
 import com.drnitz.aro.data.db.entity.WeightEntryEntity
 import com.drnitz.aro.data.db.entity.WorkoutEntity
 import com.drnitz.aro.data.db.entity.WorkoutSetEntity
@@ -54,6 +55,7 @@ import com.drnitz.aro.data.db.entity.WorkoutSetEntity
         WeightEntryEntity::class,
         FastingSessionEntity::class,
         DayEntity::class,
+        WaterLogEntity::class,
         FoodLogEntity::class,
         WorkoutEntity::class,
         WorkoutSetEntity::class,
@@ -86,7 +88,7 @@ abstract class AroDatabase : RoomDatabase() {
     abstract fun medicationLogDao(): MedicationLogDao
 
     companion object {
-        const val VERSION = 7
+        const val VERSION = 8
         const val NAME = "aro.db"
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -259,6 +261,38 @@ abstract class AroDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Per-drink history behind the existing days.water_ml aggregate.
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `water_logs` (
+                        `id` TEXT NOT NULL,
+                        `epoch_day` INTEGER NOT NULL,
+                        `amount_ml` INTEGER NOT NULL,
+                        `logged_at` INTEGER NOT NULL,
+                        `source` TEXT NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_water_logs_epoch_day` ON `water_logs` (`epoch_day`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_water_logs_logged_at` ON `water_logs` (`logged_at`)")
+
+                // We cannot know how many glasses made up a pre-v8 total, so preserve
+                // the day's amount as one clearly-labelled historical entry instead of
+                // showing an empty log next to a non-zero water total.
+                db.execSQL(
+                    """
+                    INSERT INTO `water_logs` (`id`, `epoch_day`, `amount_ml`, `logged_at`, `source`)
+                    SELECT 'water-backfill-' || `epoch_day`, `epoch_day`, `water_ml`, `updated_at`, 'BACKFILL'
+                    FROM `days`
+                    WHERE `water_ml` > 0
+                    """.trimIndent(),
+                )
+            }
+        }
+
         @Volatile
         private var instance: AroDatabase? = null
 
@@ -277,6 +311,7 @@ abstract class AroDatabase : RoomDatabase() {
                     MIGRATION_4_5,
                     MIGRATION_5_6,
                     MIGRATION_6_7,
+                    MIGRATION_7_8,
                 )
                 .addCallback(object : Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) {

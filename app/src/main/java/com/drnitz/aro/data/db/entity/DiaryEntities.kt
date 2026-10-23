@@ -32,6 +32,34 @@ data class DayEntity(
 )
 
 /**
+ * One individual drink.
+ *
+ * [DayEntity.waterMl] remains the fast aggregate the dashboard reads, while this table
+ * is the auditable history behind it: every +250 mL action becomes one row here, so the
+ * user can see how many times they drank and can delete a mistaken entry.
+ *
+ * Indexed on `epoch_day` for the day's list and on `logged_at` for the newest-first
+ * history screen. The two are kept consistent inside a single Room transaction.
+ */
+@Entity(
+    tableName = "water_logs",
+    indices = [
+        Index(value = ["epoch_day"]),
+        Index(value = ["logged_at"]),
+    ],
+)
+data class WaterLogEntity(
+    @PrimaryKey
+    @ColumnInfo(name = "id")
+    val id: String,
+
+    @ColumnInfo(name = "epoch_day") val epochDay: Long,
+    @ColumnInfo(name = "amount_ml") val amountMl: Int,
+    @ColumnInfo(name = "logged_at") val loggedAt: Long,
+    @ColumnInfo(name = "source") val source: String,
+)
+
+/**
  * One food added to one meal on one day.
  *
  * ### Why `epochDay` is a `Long`

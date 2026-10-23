@@ -8,4 +8,5 @@ import kotlinx.serialization.Serializable
 @Serializable data object ClinicalAudit : NavKey
 @Serializable data object DataManagement : NavKey
 @Serializable data class ClinicalRecords(val initialTab: Int = 0) : NavKey
+@Serializable data class IntakeHistory(val initialTab: Int = 0) : NavKey
 

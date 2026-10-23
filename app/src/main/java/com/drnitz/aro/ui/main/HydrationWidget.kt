@@ -14,11 +14,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -47,12 +49,14 @@ import kotlin.math.roundToInt
 internal fun HydrationWidget(
     waterMl: Int,
     targetWaterMl: Int,
+    waterLogCount: Int = 0,
     planningMode: Boolean = false,
     plannedWaterMl: Int = 0,
     onAddWater: (Int) -> Unit,
     onResetWater: () -> Unit,
     onOpenCustomWater: () -> Unit,
     onOpenReminders: () -> Unit = {},
+    onOpenHistory: () -> Unit = {},
 ) {
     val shownWaterMl = if (planningMode) plannedWaterMl else waterMl
 
@@ -140,6 +144,16 @@ internal fun HydrationWidget(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            } else if (!planningMode && waterLogCount > 0) {
+                Text(
+                    text = if (waterLogCount == 1) {
+                        "1 drink logged"
+                    } else {
+                        "$waterLogCount drinks logged"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
 
             Spacer(modifier = Modifier.height(6.dp))
@@ -193,6 +207,28 @@ internal fun HydrationWidget(
                 ) {
                     Text("More", style = MaterialTheme.typography.labelSmall)
                 }
+            }
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            TextButton(
+                onClick = onOpenHistory,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = AroTheme.macroColors.water,
+                ),
+                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(26.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.History,
+                    contentDescription = null,
+                    tint = AroTheme.macroColors.water.copy(alpha = 0.8f),
+                    modifier = Modifier.size(13.dp),
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("View water log", style = MaterialTheme.typography.labelSmall)
             }
         }
     }

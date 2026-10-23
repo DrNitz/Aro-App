@@ -80,6 +80,7 @@ import com.drnitz.aro.BodyPlanner
 import com.drnitz.aro.ClinicalAudit
 import com.drnitz.aro.ClinicalRecords
 import com.drnitz.aro.DataManagement
+import com.drnitz.aro.IntakeHistory
 import com.drnitz.aro.PlanDeepLink
 import com.drnitz.aro.data.db.AroDatabase
 import com.drnitz.aro.data.library.OfflineExerciseLibrary
@@ -501,6 +502,7 @@ internal fun MainScreenContent(
                     onOpenBodyPlanner = { onItemClick(BodyPlanner) },
                     onOpenVitals = { onItemClick(ClinicalRecords(0)) },
                     onOpenDataManagement = { onItemClick(DataManagement) },
+                    onOpenIntakeHistory = { onItemClick(IntakeHistory(0)) },
                 )
             }
         }

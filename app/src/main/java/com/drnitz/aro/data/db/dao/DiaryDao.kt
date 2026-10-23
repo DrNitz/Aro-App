@@ -1,6 +1,7 @@
 package com.drnitz.aro.data.db.dao
 
 import androidx.room.Dao
+import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
@@ -8,6 +9,7 @@ import com.drnitz.aro.data.db.DayNutrientTotals
 import com.drnitz.aro.data.db.DayTotalsRow
 import com.drnitz.aro.data.db.entity.DayEntity
 import com.drnitz.aro.data.db.entity.FoodLogEntity
+import com.drnitz.aro.data.db.entity.WaterLogEntity
 import com.drnitz.aro.domain.model.MealSlot
 import kotlinx.coroutines.flow.Flow
 
@@ -130,6 +132,27 @@ interface DiaryDao {
 
     @Upsert
     suspend fun upsertDay(day: DayEntity)
+
+    // ---- Water log -------------------------------------------------------
+
+    /** Every drink, newest first — the history screen's single query. */
+    @Query("SELECT * FROM water_logs ORDER BY logged_at DESC")
+    fun observeAllWaterLogs(): Flow<List<WaterLogEntity>>
+
+    @Query("SELECT * FROM water_logs WHERE epoch_day = :epochDay ORDER BY logged_at DESC")
+    fun observeWaterLogsForDay(epochDay: Long): Flow<List<WaterLogEntity>>
+
+    @Query("SELECT * FROM water_logs WHERE id = :id")
+    suspend fun findWaterLog(id: String): WaterLogEntity?
+
+    @Insert
+    suspend fun insertWaterLog(log: WaterLogEntity)
+
+    @Query("DELETE FROM water_logs WHERE id = :id")
+    suspend fun deleteWaterLog(id: String): Int
+
+    @Query("DELETE FROM water_logs WHERE epoch_day = :epochDay")
+    suspend fun deleteWaterLogsForDay(epochDay: Long): Int
 
     // ---- History ----------------------------------------------------------
 

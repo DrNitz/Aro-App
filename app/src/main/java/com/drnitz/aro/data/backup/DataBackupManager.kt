@@ -180,6 +180,21 @@ class DataBackupManager(
                 }
             }
 
+            // Backups made before schema 8 only carry days.water_ml. Reconstruct one
+            // historical entry per such day so restoring an older archive does not
+            // produce a non-zero reservoir with an empty drink log.
+            sqlite.execSQL(
+                """
+                INSERT INTO `water_logs` (`id`, `epoch_day`, `amount_ml`, `logged_at`, `source`)
+                SELECT 'water-restore-' || `epoch_day`, `epoch_day`, `water_ml`, `updated_at`, 'BACKFILL'
+                FROM `days`
+                WHERE `water_ml` > 0
+                  AND NOT EXISTS (
+                      SELECT 1 FROM `water_logs` WHERE `water_logs`.`epoch_day` = `days`.`epoch_day`
+                  )
+                """.trimIndent(),
+            )
+
             sqlite.setTransactionSuccessful()
         } finally {
             sqlite.endTransaction()
@@ -345,6 +360,7 @@ class DataBackupManager(
             "weight_entries",
             "fasting_sessions",
             "days",
+            "water_logs",
             "food_logs",
             "workouts",
             "workout_sets",

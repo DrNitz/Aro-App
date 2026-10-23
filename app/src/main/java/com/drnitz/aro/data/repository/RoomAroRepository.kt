@@ -1,11 +1,13 @@
 package com.drnitz.aro.data.repository
 
+import androidx.room.withTransaction
 import com.drnitz.aro.data.db.AroDatabase
 import com.drnitz.aro.data.db.DateProvider
 import com.drnitz.aro.data.db.SystemDateProvider
 import com.drnitz.aro.data.db.entity.DayEntity
 import com.drnitz.aro.data.db.entity.FastingSessionEntity
 import com.drnitz.aro.data.db.entity.PlanCompletionEntity
+import com.drnitz.aro.data.db.entity.WaterLogEntity
 import com.drnitz.aro.data.db.mapper.buildDiaryDay
 import com.drnitz.aro.data.db.mapper.logWeight
 import com.drnitz.aro.data.db.mapper.planOccurrencesForDay
@@ -18,6 +20,7 @@ import com.drnitz.aro.data.db.mapper.toRecentEntity
 import com.drnitz.aro.domain.model.CuratedFoodItem
 import com.drnitz.aro.domain.model.DiaryDay
 import com.drnitz.aro.domain.model.DoctorConsultation
+import com.drnitz.aro.domain.model.FastingSession
 import com.drnitz.aro.domain.model.FoodLogEntry
 import com.drnitz.aro.domain.model.MealSlot
 import com.drnitz.aro.domain.model.MedicationLog
@@ -26,6 +29,8 @@ import com.drnitz.aro.domain.model.PlanItem
 import com.drnitz.aro.domain.model.PlanOccurrence
 import com.drnitz.aro.domain.model.UserProfile
 import com.drnitz.aro.domain.model.VitalsEntry
+import com.drnitz.aro.domain.model.WaterLog
+import com.drnitz.aro.domain.model.WaterLogSource
 import com.drnitz.aro.domain.model.WorkoutLog
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -141,21 +146,83 @@ class RoomAroRepository(
     }
 
     override suspend fun addWater(date: LocalDate, deltaMl: Int) {
+        if (deltaMl == 0) return
         val epochDay = date.toEpochDay()
-        val existing = diaryDao.getDay(epochDay)
-        val current = existing?.waterMl ?: 0
-        setWater(date, (current + deltaMl).coerceAtLeast(0))
+        val now = System.currentTimeMillis()
+        database.withTransaction {
+            val existing = diaryDao.getDay(epochDay)
+            val current = existing?.waterMl ?: 0
+            // Only positive additions are drinks; a negative correction still updates
+            // the aggregate but must not masquerade as a logged glass of water.
+            if (deltaMl > 0) {
+                diaryDao.insertWaterLog(
+                    WaterLogEntity(
+                        id = UUID.randomUUID().toString(),
+                        epochDay = epochDay,
+                        amountMl = deltaMl,
+                        loggedAt = now,
+                        source = WaterLogSource.MANUAL.name,
+                    ),
+                )
+            }
+            diaryDao.upsertDay(
+                (existing ?: newDayRow(epochDay, now)).copy(
+                    waterMl = (current + deltaMl).coerceAtLeast(0),
+                    updatedAt = now,
+                ),
+            )
+        }
     }
 
     override suspend fun setWater(date: LocalDate, waterMl: Int) {
         val epochDay = date.toEpochDay()
-        val existing = diaryDao.getDay(epochDay)
-        diaryDao.upsertDay(
-            (existing ?: newDayRow(epochDay)).copy(
-                waterMl = waterMl.coerceAtLeast(0),
-                updatedAt = System.currentTimeMillis(),
+        val now = System.currentTimeMillis()
+        val safeWaterMl = waterMl.coerceAtLeast(0)
+        database.withTransaction {
+            val existing = diaryDao.getDay(epochDay)
+            // Replacing the total replaces its history too, otherwise the log would
+            // keep drinks that no longer add up to the day's reservoir.
+            diaryDao.deleteWaterLogsForDay(epochDay)
+            if (safeWaterMl > 0) {
+                diaryDao.insertWaterLog(
+                    WaterLogEntity(
+                        id = UUID.randomUUID().toString(),
+                        epochDay = epochDay,
+                        amountMl = safeWaterMl,
+                        loggedAt = now,
+                        source = WaterLogSource.CORRECTION.name,
+                    ),
+                )
+            }
+            diaryDao.upsertDay(
+                (existing ?: newDayRow(epochDay, now)).copy(
+                    waterMl = safeWaterMl,
+                    updatedAt = now,
+                ),
             )
-        )
+        }
+    }
+
+    override fun observeAllWaterLogs(): Flow<List<WaterLog>> =
+        diaryDao.observeAllWaterLogs().map { logs -> logs.map { it.toDomain() } }
+
+    override fun observeWaterLogsForDate(date: LocalDate): Flow<List<WaterLog>> =
+        diaryDao.observeWaterLogsForDay(date.toEpochDay()).map { logs -> logs.map { it.toDomain() } }
+
+    override suspend fun deleteWaterLog(id: String) {
+        database.withTransaction {
+            val log = diaryDao.findWaterLog(id) ?: return@withTransaction
+            val existing = diaryDao.getDay(log.epochDay)
+            diaryDao.deleteWaterLog(id)
+            if (existing != null) {
+                diaryDao.upsertDay(
+                    existing.copy(
+                        waterMl = (existing.waterMl - log.amountMl).coerceAtLeast(0),
+                        updatedAt = System.currentTimeMillis(),
+                    ),
+                )
+            }
+        }
     }
 
     override suspend fun setNotes(date: LocalDate, notes: String) {
@@ -330,6 +397,13 @@ class RoomAroRepository(
                 )
             }
         }
+
+    override fun observeFastHistory(limit: Int): Flow<List<FastingSession>> =
+        fastingDao.observeRecentSessions(limit).map { sessions -> sessions.map { it.toDomain() } }
+
+    override suspend fun deleteFastingSession(id: String) {
+        fastingDao.deleteCompletedSession(id)
+    }
 
     override suspend fun startFast(targetHours: Int, startedAt: Instant) {
         fastingDao.startSession(

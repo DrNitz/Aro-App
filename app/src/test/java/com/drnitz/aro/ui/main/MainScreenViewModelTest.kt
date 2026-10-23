@@ -19,6 +19,7 @@ import com.drnitz.aro.domain.model.PlannedFood
 import com.drnitz.aro.domain.model.SetEntry
 import com.drnitz.aro.domain.model.UserProfile
 import com.drnitz.aro.domain.model.VitalsEntry
+import com.drnitz.aro.domain.model.WaterLog
 import com.drnitz.aro.domain.model.WorkoutLog
 import com.drnitz.aro.domain.model.WorkoutType
 import com.drnitz.aro.notifications.PlanReminderScheduler
@@ -117,15 +118,17 @@ class MainScreenViewModelTest {
 
         viewModel.addWater(500)
         val stateWithMoreWater = viewModel.uiState.filterIsInstance<MainScreenUiState.Success>().first {
-            it.diaryDay.waterMl == 750
+            it.diaryDay.waterMl == 750 && it.waterLogCount == 2
         }
         assertEquals(750, stateWithMoreWater.diaryDay.waterMl)
+        assertEquals(2, stateWithMoreWater.waterLogCount)
 
         viewModel.resetWater()
         val stateReset = viewModel.uiState.filterIsInstance<MainScreenUiState.Success>().first {
-            it.diaryDay.waterMl == 0
+            it.diaryDay.waterMl == 0 && it.waterLogCount == 0
         }
         assertEquals(0, stateReset.diaryDay.waterMl)
+        assertEquals(0, stateReset.waterLogCount)
     }
 
     @Test
@@ -531,6 +534,7 @@ private class FakeAroRepository(
     val profileFlow = MutableStateFlow(initialProfile)
     val settingsFlow = MutableStateFlow(initialSettings)
     val diaryDays = mutableMapOf<LocalDate, MutableStateFlow<DiaryDay>>()
+    val waterLogsFlow = MutableStateFlow<Map<LocalDate, List<WaterLog>>>(emptyMap())
     val activeFastFlow = MutableStateFlow<ActiveFast?>(null)
     val planItemsFlow = MutableStateFlow<List<PlanItem>>(emptyList())
     val planCompletionsFlow = MutableStateFlow<Map<Pair<String, LocalDate>, Instant>>(emptyMap())
@@ -633,11 +637,34 @@ private class FakeAroRepository(
         val flow = getDayFlow(date)
         val current = flow.value.waterMl
         flow.value = flow.value.copy(waterMl = (current + deltaMl).coerceAtLeast(0))
+        if (deltaMl > 0) {
+            val logs = waterLogsFlow.value[date].orEmpty()
+            val updatedLogs = logs + WaterLog(
+                id = "water-${date}-${logs.size + 1}",
+                date = date,
+                amountMl = deltaMl,
+                loggedAt = Instant.ofEpochMilli(1_000L + logs.size),
+            )
+            waterLogsFlow.value = waterLogsFlow.value + (date to updatedLogs)
+        }
     }
 
     override suspend fun setWater(date: LocalDate, waterMl: Int) {
         val flow = getDayFlow(date)
         flow.value = flow.value.copy(waterMl = waterMl.coerceAtLeast(0))
+        waterLogsFlow.value = waterLogsFlow.value - date
+    }
+
+    override fun observeAllWaterLogs(): Flow<List<WaterLog>> =
+        waterLogsFlow.map { it.values.flatten().sortedByDescending { log -> log.loggedAt } }
+
+    override fun observeWaterLogsForDate(date: LocalDate): Flow<List<WaterLog>> =
+        waterLogsFlow.map { it[date].orEmpty() }
+
+    override suspend fun deleteWaterLog(id: String) {
+        waterLogsFlow.value = waterLogsFlow.value.mapValues { (_, logs) ->
+            logs.filterNot { it.id == id }
+        }
     }
 
     override suspend fun setNotes(date: LocalDate, notes: String) {}

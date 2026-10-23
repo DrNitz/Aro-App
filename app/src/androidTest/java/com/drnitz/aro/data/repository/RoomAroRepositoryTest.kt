@@ -117,6 +117,21 @@ class RoomAroRepositoryTest : DatabaseTestBase() {
 
         assertEquals(750, repository.observeDiaryDay(today).first().waterMl)
         assertEquals(750, repository.observeDiaryDay(yesterday).first().waterMl)
+
+        val todayLogs = repository.observeWaterLogsForDate(today).first()
+        assertEquals(2, todayLogs.size)
+        assertEquals(750, todayLogs.sumOf { it.amountMl })
+        assertEquals(1, repository.observeWaterLogsForDate(yesterday).first().size)
+
+        // Deleting one drink keeps the aggregate consistent with the remaining log.
+        val smallDrink = todayLogs.first { it.amountMl == 250 }
+        repository.deleteWaterLog(smallDrink.id)
+        assertEquals(500, repository.observeDiaryDay(today).first().waterMl)
+        assertEquals(1, repository.observeWaterLogsForDate(today).first().size)
+
+        repository.setWater(today, 0)
+        assertEquals(0, repository.observeDiaryDay(today).first().waterMl)
+        assertTrue(repository.observeWaterLogsForDate(today).first().isEmpty())
     }
 
     @Test
@@ -199,6 +214,19 @@ class RoomAroRepositoryTest : DatabaseTestBase() {
 
         repository.endFast(endedAt = start.plusSeconds(3600 * 10))
         assertNull(repository.observeActiveFast().first())
+
+        val history = repository.observeFastHistory().first()
+        assertEquals(1, history.size)
+        val session = history.single()
+        assertFalse(session.isActive)
+        assertEquals(16, session.targetHours)
+        assertEquals(600L, session.durationMinutes())
+        assertFalse(session.metTarget())
+        assertEquals(today, session.date)
+
+        // Removing a completed session removes it from the history flow.
+        repository.deleteFastingSession(session.id)
+        assertTrue(repository.observeFastHistory().first().isEmpty())
     }
 
     @Test

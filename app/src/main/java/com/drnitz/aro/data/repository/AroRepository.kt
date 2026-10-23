@@ -3,6 +3,7 @@ package com.drnitz.aro.data.repository
 import com.drnitz.aro.domain.model.CuratedFoodItem
 import com.drnitz.aro.domain.model.DiaryDay
 import com.drnitz.aro.domain.model.DoctorConsultation
+import com.drnitz.aro.domain.model.FastingSession
 import com.drnitz.aro.domain.model.FoodLogEntry
 import com.drnitz.aro.domain.model.MedicationLog
 import com.drnitz.aro.domain.model.NutrientTotals
@@ -10,6 +11,7 @@ import com.drnitz.aro.domain.model.PlanItem
 import com.drnitz.aro.domain.model.PlanOccurrence
 import com.drnitz.aro.domain.model.UserProfile
 import com.drnitz.aro.domain.model.VitalsEntry
+import com.drnitz.aro.domain.model.WaterLog
 import com.drnitz.aro.domain.model.WorkoutLog
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -63,6 +65,15 @@ interface AroRepository {
     suspend fun addWater(date: LocalDate, deltaMl: Int)
 
     suspend fun setWater(date: LocalDate, waterMl: Int)
+
+    /** Every individual drink, newest first. */
+    fun observeAllWaterLogs(): Flow<List<WaterLog>> = flowOf(emptyList())
+
+    /** The drinks logged on one day, newest first. */
+    fun observeWaterLogsForDate(date: LocalDate): Flow<List<WaterLog>> = flowOf(emptyList())
+
+    /** Removes one drink and keeps the day's aggregate in sync. */
+    suspend fun deleteWaterLog(id: String) {}
 
     suspend fun setNotes(date: LocalDate, notes: String)
 
@@ -149,9 +160,15 @@ interface AroRepository {
 
     fun observeActiveFast(): Flow<ActiveFast?>
 
+    /** Completed and running sessions, newest first. */
+    fun observeFastHistory(limit: Int = 200): Flow<List<FastingSession>> = flowOf(emptyList())
+
     suspend fun startFast(targetHours: Int, startedAt: java.time.Instant = java.time.Instant.now())
 
     suspend fun endFast(endedAt: java.time.Instant = java.time.Instant.now())
+
+    /** Deletes a completed session; a running fast must be ended first. */
+    suspend fun deleteFastingSession(id: String) {}
 
     // ---- Vitals -----------------------------------------------------------
 

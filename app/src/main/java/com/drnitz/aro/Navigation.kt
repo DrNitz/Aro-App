@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import com.drnitz.aro.ui.intake.IntakeHistoryScreen
 import com.drnitz.aro.ui.main.MainScreen
 import com.drnitz.aro.ui.planner.BodyPlannerScreen
 import com.drnitz.aro.ui.settings.DataManagementScreen
@@ -61,6 +62,13 @@ fun MainNavigation(
         entry<ClinicalRecords> { recordKey ->
           VitalsScreen(
             initialTab = recordKey.initialTab,
+            onBack = { backStack.removeLastOrNull() },
+            modifier = Modifier.safeDrawingPadding(),
+          )
+        }
+        entry<IntakeHistory> { historyKey ->
+          IntakeHistoryScreen(
+            initialTab = historyKey.initialTab,
             onBack = { backStack.removeLastOrNull() },
             modifier = Modifier.safeDrawingPadding(),
           )

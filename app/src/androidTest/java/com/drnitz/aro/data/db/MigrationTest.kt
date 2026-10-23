@@ -335,7 +335,53 @@ class MigrationTest {
     }
 
     @Test
-    fun allMigrations_from1To7_preservesDataIntegrity() {
+    fun migration7To8_createsWaterLogsAndBackfillsExistingTotals() {
+        helper.createDatabase(testDbName, 7).apply {
+            execSQL(
+                """
+                INSERT INTO days (epoch_day, water_ml, notes, created_at, updated_at)
+                VALUES
+                    (19007, 1500, 'Hydrated day', 1000, 12345),
+                    (19008, 0, 'No water day', 1000, 20000)
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(testDbName, 8, true, AroDatabase.MIGRATION_7_8)
+
+        // The pre-v8 total survives as one clearly-labelled historical entry.
+        val backfillCursor = db.query(
+            "SELECT id, epoch_day, amount_ml, logged_at, source FROM water_logs ORDER BY epoch_day",
+        )
+        assertTrue(backfillCursor.moveToFirst())
+        assertEquals("water-backfill-19007", backfillCursor.getString(0))
+        assertEquals(19007L, backfillCursor.getLong(1))
+        assertEquals(1500, backfillCursor.getInt(2))
+        assertEquals(12345L, backfillCursor.getLong(3))
+        assertEquals("BACKFILL", backfillCursor.getString(4))
+        assertTrue(!backfillCursor.moveToNext()) // zero-water days are not logged
+        backfillCursor.close()
+
+        // New per-drink rows are writable and remain attached to their day.
+        db.execSQL(
+            """
+            INSERT INTO water_logs (id, epoch_day, amount_ml, logged_at, source)
+            VALUES ('water-1', 19008, 250, 21000, 'MANUAL')
+            """.trimIndent(),
+        )
+        val logCursor = db.query(
+            "SELECT id, amount_ml, source FROM water_logs WHERE epoch_day = 19008",
+        )
+        assertTrue(logCursor.moveToFirst())
+        assertEquals("water-1", logCursor.getString(0))
+        assertEquals(250, logCursor.getInt(1))
+        assertEquals("MANUAL", logCursor.getString(2))
+        logCursor.close()
+    }
+
+    @Test
+    fun allMigrations_from1To8_preservesDataIntegrity() {
         helper.createDatabase(testDbName, 1).apply {
             execSQL(
                 """
@@ -373,7 +419,7 @@ class MigrationTest {
 
         val db = helper.runMigrationsAndValidate(
             testDbName,
-            7,
+            8,
             true,
             AroDatabase.MIGRATION_1_2,
             AroDatabase.MIGRATION_2_3,
@@ -381,6 +427,7 @@ class MigrationTest {
             AroDatabase.MIGRATION_4_5,
             AroDatabase.MIGRATION_5_6,
             AroDatabase.MIGRATION_6_7,
+            AroDatabase.MIGRATION_7_8,
         )
 
         // Verify original profile
@@ -398,6 +445,15 @@ class MigrationTest {
         assertEquals(1800, dayCursor.getInt(1))
         assertEquals("All migration day", dayCursor.getString(2))
         dayCursor.close()
+
+        // The final migration preserved that total as a historical drink entry.
+        val waterCursor = db.query(
+            "SELECT amount_ml, source FROM water_logs WHERE epoch_day = 19005",
+        )
+        assertTrue(waterCursor.moveToFirst())
+        assertEquals(1800, waterCursor.getInt(0))
+        assertEquals("BACKFILL", waterCursor.getString(1))
+        waterCursor.close()
 
         // Verify original workout and new columns present as null
         val workoutCursor = db.query("SELECT id, exercise_name, distance_km, steps FROM workouts WHERE id = 'workout-all'")

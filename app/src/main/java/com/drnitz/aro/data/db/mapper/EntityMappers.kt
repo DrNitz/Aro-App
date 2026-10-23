@@ -3,12 +3,14 @@ package com.drnitz.aro.data.db.mapper
 import com.drnitz.aro.data.db.NutrientColumns
 import com.drnitz.aro.data.db.entity.ConsultationEntity
 import com.drnitz.aro.data.db.entity.DayEntity
+import com.drnitz.aro.data.db.entity.FastingSessionEntity
 import com.drnitz.aro.data.db.entity.FavoriteFoodEntity
 import com.drnitz.aro.data.db.entity.FoodLogEntity
 import com.drnitz.aro.data.db.entity.MedicationLogEntity
 import com.drnitz.aro.data.db.entity.ProfileEntity
 import com.drnitz.aro.data.db.entity.RecentFoodEntity
 import com.drnitz.aro.data.db.entity.VitalsEntryEntity
+import com.drnitz.aro.data.db.entity.WaterLogEntity
 import com.drnitz.aro.data.db.entity.WeightEntryEntity
 import com.drnitz.aro.data.db.entity.WorkoutEntity
 import com.drnitz.aro.data.db.entity.WorkoutSetEntity
@@ -19,6 +21,7 @@ import com.drnitz.aro.domain.model.BloodPressure
 import com.drnitz.aro.domain.model.CuratedFoodItem
 import com.drnitz.aro.domain.model.DiaryDay
 import com.drnitz.aro.domain.model.DoctorConsultation
+import com.drnitz.aro.domain.model.FastingSession
 import com.drnitz.aro.domain.model.FoodLogEntry
 import com.drnitz.aro.domain.model.GlucoseMeasurementContext
 import com.drnitz.aro.domain.model.Goal
@@ -32,6 +35,8 @@ import com.drnitz.aro.domain.model.Sex
 import com.drnitz.aro.domain.model.SetEntry
 import com.drnitz.aro.domain.model.UserProfile
 import com.drnitz.aro.domain.model.VitalsEntry
+import com.drnitz.aro.domain.model.WaterLog
+import com.drnitz.aro.domain.model.WaterLogSource
 import com.drnitz.aro.domain.model.WorkoutLog
 import com.drnitz.aro.domain.model.WorkoutType
 import java.time.Instant
@@ -213,6 +218,25 @@ fun buildDiaryDay(
     workouts = workouts.map { it.toDomain() },
     waterMl = day?.waterMl ?: 0,
     notes = day?.notes.orEmpty(),
+)
+
+// ---- Intake logs -----------------------------------------------------------
+
+fun WaterLogEntity.toDomain(): WaterLog = WaterLog(
+    id = id,
+    date = LocalDate.ofEpochDay(epochDay),
+    amountMl = amountMl,
+    loggedAt = Instant.ofEpochMilli(loggedAt),
+    source = WaterLogSource.fromStorage(source),
+)
+
+fun FastingSessionEntity.toDomain(): FastingSession = FastingSession(
+    id = id,
+    date = LocalDate.ofEpochDay(epochDay),
+    targetHours = targetHours,
+    startedAt = Instant.ofEpochMilli(startedAt),
+    endedAt = endedAt?.let(Instant::ofEpochMilli),
+    createdAt = Instant.ofEpochMilli(createdAt),
 )
 
 // ---- Workouts --------------------------------------------------------------

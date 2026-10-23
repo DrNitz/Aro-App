@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation3.runtime.NavKey
 import com.drnitz.aro.ClinicalAudit
+import com.drnitz.aro.IntakeHistory
 import com.drnitz.aro.domain.calculation.EnergyPlan
 import com.drnitz.aro.domain.calculation.OneRepMaxCalculator
 import com.drnitz.aro.domain.clinical.MealCoverage
@@ -123,6 +124,7 @@ internal fun DiarySections(
                 HydrationWidget(
                     waterMl = state.diaryDay.waterMl,
                     targetWaterMl = state.targetWaterMl,
+                    waterLogCount = state.waterLogCount,
                     planningMode = planningMode,
                     plannedWaterMl = planSuccess
                         ?.takeIf { it.selectedDate == state.selectedDate }
@@ -131,6 +133,7 @@ internal fun DiarySections(
                     onResetWater = onResetWater,
                     onOpenCustomWater = onOpenCustomWater,
                     onOpenReminders = onOpenNotifications,
+                    onOpenHistory = { onItemClick(IntakeHistory(0)) },
                 )
             }
             Box(modifier = Modifier.weight(1f)) {
@@ -143,6 +146,7 @@ internal fun DiarySections(
                     onOpenStartFast = onOpenStartFast,
                     onEndFast = onEndFast,
                     onOpenReminders = onOpenNotifications,
+                    onOpenHistory = { onItemClick(IntakeHistory(1)) },
                 )
             }
         }
