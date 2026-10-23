@@ -2,6 +2,7 @@ package com.drnitz.aro.data.db.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
@@ -147,6 +148,20 @@ interface DiaryDao {
 
     @Insert
     suspend fun insertWaterLog(log: WaterLogEntity)
+
+    /**
+     * Undo path: returns the inserted row id, or -1 when the original id already exists.
+     * Only a real insertion should increase the day's water aggregate.
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertWaterLogIfAbsent(log: WaterLogEntity): Long
+
+    /** Moves or corrects one drink without creating a second row. */
+    @Query(
+        "UPDATE water_logs SET epoch_day = :epochDay, amount_ml = :amountMl, " +
+            "logged_at = :loggedAt, source = 'CORRECTION' WHERE id = :id",
+    )
+    suspend fun updateWaterLog(id: String, epochDay: Long, amountMl: Int, loggedAt: Long): Int
 
     @Query("DELETE FROM water_logs WHERE id = :id")
     suspend fun deleteWaterLog(id: String): Int

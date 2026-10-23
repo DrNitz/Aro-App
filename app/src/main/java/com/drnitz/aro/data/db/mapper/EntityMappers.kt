@@ -237,6 +237,7 @@ fun FastingSessionEntity.toDomain(): FastingSession = FastingSession(
     startedAt = Instant.ofEpochMilli(startedAt),
     endedAt = endedAt?.let(Instant::ofEpochMilli),
     createdAt = Instant.ofEpochMilli(createdAt),
+    note = note.orEmpty(),
 )
 
 // ---- Workouts --------------------------------------------------------------

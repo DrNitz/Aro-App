@@ -88,7 +88,7 @@ abstract class AroDatabase : RoomDatabase() {
     abstract fun medicationLogDao(): MedicationLogDao
 
     companion object {
-        const val VERSION = 8
+        const val VERSION = 9
         const val NAME = "aro.db"
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -293,6 +293,14 @@ abstract class AroDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Fasting notes are optional context for completed sessions. Nullable
+                // keeps the migration safe for databases that already contain rows.
+                db.execSQL("ALTER TABLE `fasting_sessions` ADD COLUMN `note` TEXT")
+            }
+        }
+
         @Volatile
         private var instance: AroDatabase? = null
 
@@ -312,6 +320,7 @@ abstract class AroDatabase : RoomDatabase() {
                     MIGRATION_5_6,
                     MIGRATION_6_7,
                     MIGRATION_7_8,
+                    MIGRATION_8_9,
                 )
                 .addCallback(object : Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) {

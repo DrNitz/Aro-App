@@ -1,6 +1,8 @@
 package com.drnitz.aro.data.db.dao
 
 import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
@@ -108,6 +110,25 @@ interface FastingDao {
 
     @Upsert
     suspend fun upsertSession(session: FastingSessionEntity)
+
+    /** Undo path: keeps the original row only when it is genuinely missing. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertSessionIfAbsent(session: FastingSessionEntity): Long
+
+    /** Edits a completed session; the running session is intentionally excluded. */
+    @Query(
+        "UPDATE fasting_sessions SET epoch_day = :epochDay, target_hours = :targetHours, " +
+            "started_at = :startedAt, ended_at = :endedAt, note = :note " +
+            "WHERE id = :id AND ended_at IS NOT NULL",
+    )
+    suspend fun updateCompletedSession(
+        id: String,
+        epochDay: Long,
+        targetHours: Int,
+        startedAt: Long,
+        endedAt: Long,
+        note: String?,
+    ): Int
 
     @Query("UPDATE fasting_sessions SET ended_at = :endedAt WHERE id = :id")
     suspend fun endSession(id: String, endedAt: Long): Int

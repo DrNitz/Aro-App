@@ -71,12 +71,30 @@ class IntakeLogMapperTest {
             startedAt = start.toEpochMilli(),
             endedAt = end.toEpochMilli(),
             createdAt = start.toEpochMilli(),
+            note = "Felt sharp all morning.",
         ).toDomain()
 
         assertEquals(date, session.date)
         assertFalse(session.isActive)
         assertEquals(960L, session.durationMinutes())
         assertTrue(session.metTarget())
+        assertEquals("Felt sharp all morning.", session.note)
+    }
+
+    @Test
+    fun `a fast without a note maps to an empty note`() {
+        val start = Instant.parse("2026-10-22T18:00:00Z")
+        val session = FastingSessionEntity(
+            id = "fast-3",
+            epochDay = date.toEpochDay(),
+            targetHours = 16,
+            startedAt = start.toEpochMilli(),
+            endedAt = start.plusSeconds(16 * 3600).toEpochMilli(),
+            createdAt = start.toEpochMilli(),
+            note = null,
+        ).toDomain()
+
+        assertEquals("", session.note)
     }
 
     @Test

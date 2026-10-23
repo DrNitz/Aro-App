@@ -381,7 +381,36 @@ class MigrationTest {
     }
 
     @Test
-    fun allMigrations_from1To8_preservesDataIntegrity() {
+    fun migration8To9_addsNullableFastingNote() {
+        helper.createDatabase(testDbName, 8).apply {
+            execSQL(
+                """
+                INSERT INTO fasting_sessions (
+                    id, epoch_day, target_hours, started_at, ended_at, created_at
+                ) VALUES (
+                    'fast-v8', 19009, 16, 1000, 2000, 1000
+                )
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(testDbName, 9, true, AroDatabase.MIGRATION_8_9)
+
+        val noteCursor = db.query("SELECT note FROM fasting_sessions WHERE id = 'fast-v8'")
+        assertTrue(noteCursor.moveToFirst())
+        assertTrue(noteCursor.isNull(0))
+        noteCursor.close()
+
+        db.execSQL("UPDATE fasting_sessions SET note = 'Good focus after 14h' WHERE id = 'fast-v8'")
+        val updatedCursor = db.query("SELECT note FROM fasting_sessions WHERE id = 'fast-v8'")
+        assertTrue(updatedCursor.moveToFirst())
+        assertEquals("Good focus after 14h", updatedCursor.getString(0))
+        updatedCursor.close()
+    }
+
+    @Test
+    fun allMigrations_from1To9_preservesDataIntegrity() {
         helper.createDatabase(testDbName, 1).apply {
             execSQL(
                 """
@@ -419,7 +448,7 @@ class MigrationTest {
 
         val db = helper.runMigrationsAndValidate(
             testDbName,
-            8,
+            9,
             true,
             AroDatabase.MIGRATION_1_2,
             AroDatabase.MIGRATION_2_3,
@@ -428,6 +457,7 @@ class MigrationTest {
             AroDatabase.MIGRATION_5_6,
             AroDatabase.MIGRATION_6_7,
             AroDatabase.MIGRATION_7_8,
+            AroDatabase.MIGRATION_8_9,
         )
 
         // Verify original profile

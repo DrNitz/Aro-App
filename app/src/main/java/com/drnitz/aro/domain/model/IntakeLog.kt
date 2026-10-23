@@ -53,6 +53,8 @@ data class FastingSession(
     val startedAt: Instant,
     val endedAt: Instant?,
     val createdAt: Instant,
+    /** Optional context: hunger, energy, mood, electrolytes, etc. */
+    val note: String = "",
 ) {
     val isActive: Boolean get() = endedAt == null
 

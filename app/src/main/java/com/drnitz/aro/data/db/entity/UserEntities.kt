@@ -85,6 +85,8 @@ data class FastingSessionEntity(
     @ColumnInfo(name = "started_at") val startedAt: Long,
     @ColumnInfo(name = "ended_at") val endedAt: Long?,
     @ColumnInfo(name = "created_at") val createdAt: Long,
+    /** Nullable so the v8 → v9 migration can add it without a default value. */
+    @ColumnInfo(name = "note") val note: String? = null,
 ) {
     val isActive: Boolean get() = endedAt == null
 }

@@ -240,13 +240,15 @@ fun PlanTimePickerDialog(
     initial: LocalTime,
     onDismiss: () -> Unit,
     onConfirm: (LocalTime) -> Unit,
+    title: String = "Plan time",
+    confirmLabel: String = "Set time",
 ) {
     var hourText by remember { mutableStateOf(initial.hour.toString().padStart(2, '0')) }
     var minuteText by remember { mutableStateOf(initial.minute.toString().padStart(2, '0')) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Plan time") },
+        title = { Text(title) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(
@@ -305,7 +307,7 @@ fun PlanTimePickerDialog(
                     onConfirm(LocalTime.of(hour, minute))
                 },
             ) {
-                Text("Set time")
+                Text(confirmLabel)
             }
         },
         dismissButton = {
@@ -321,6 +323,7 @@ fun PlanDatePickerDialog(
     onDismiss: () -> Unit,
     onConfirm: (LocalDate) -> Unit,
     title: String = "Choose date",
+    confirmLabel: String = "Use date",
 ) {
     val state = rememberDatePickerState(
         initialSelectedDateMillis = initialDate.toDatePickerMillis(),
@@ -336,7 +339,7 @@ fun PlanDatePickerDialog(
                     onConfirm(selected)
                 },
             ) {
-                Text("Use date")
+                Text(confirmLabel)
             }
         },
         dismissButton = {

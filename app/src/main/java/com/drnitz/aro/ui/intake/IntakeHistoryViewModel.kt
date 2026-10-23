@@ -94,8 +94,47 @@ class IntakeHistoryViewModel(
         viewModelScope.launch { repository.deleteWaterLog(id) }
     }
 
+    fun addWaterLog(date: LocalDate, amountMl: Int, loggedAt: java.time.Instant) {
+        viewModelScope.launch { repository.addWaterLog(date, amountMl, loggedAt) }
+    }
+
+    fun updateWaterLog(id: String, date: LocalDate, amountMl: Int, loggedAt: java.time.Instant) {
+        viewModelScope.launch { repository.updateWaterLog(id, date, amountMl, loggedAt) }
+    }
+
+    fun restoreWaterLog(log: WaterLog) {
+        viewModelScope.launch { repository.restoreWaterLog(log) }
+    }
+
     fun deleteFastingSession(id: String) {
         viewModelScope.launch { repository.deleteFastingSession(id) }
+    }
+
+    fun addFastingSession(
+        targetHours: Int,
+        startedAt: java.time.Instant,
+        endedAt: java.time.Instant,
+        note: String,
+    ) {
+        viewModelScope.launch {
+            repository.addFastingSession(targetHours, startedAt, endedAt, note)
+        }
+    }
+
+    fun updateFastingSession(
+        id: String,
+        targetHours: Int,
+        startedAt: java.time.Instant,
+        endedAt: java.time.Instant,
+        note: String,
+    ) {
+        viewModelScope.launch {
+            repository.updateFastingSession(id, targetHours, startedAt, endedAt, note)
+        }
+    }
+
+    fun restoreFastingSession(session: FastingSession) {
+        viewModelScope.launch { repository.restoreFastingSession(session) }
     }
 
     companion object {

@@ -10,6 +10,7 @@ import com.drnitz.aro.domain.model.MealSlot
 import com.drnitz.aro.domain.model.NutrientKey
 import com.drnitz.aro.domain.model.NutrientTotals
 import com.drnitz.aro.domain.model.SetEntry
+import com.drnitz.aro.domain.model.WaterLogSource
 import com.drnitz.aro.domain.model.WorkoutLog
 import com.drnitz.aro.domain.model.WorkoutType
 import kotlinx.coroutines.flow.first
@@ -132,6 +133,80 @@ class RoomAroRepositoryTest : DatabaseTestBase() {
         repository.setWater(today, 0)
         assertEquals(0, repository.observeDiaryDay(today).first().waterMl)
         assertTrue(repository.observeWaterLogsForDate(today).first().isEmpty())
+    }
+
+    @Test
+    fun waterLogsCanBeAddedBackdatedAndEditedAcrossDays() = runBlocking {
+        val yesterdayMorning = Instant.parse("2026-10-17T07:30:00Z")
+        repository.addWaterLog(yesterday, 350, yesterdayMorning)
+        repository.addWaterLog(today, 250, Instant.parse("2026-10-18T08:00:00Z"))
+
+        var yesterdayLogs = repository.observeWaterLogsForDate(yesterday).first()
+        assertEquals(350, yesterdayLogs.single().amountMl)
+        assertEquals(350, repository.observeDiaryDay(yesterday).first().waterMl)
+
+        val moved = repository.observeWaterLogsForDate(today).first().single()
+        repository.updateWaterLog(
+            id = moved.id,
+            date = yesterday,
+            amountMl = 600,
+            loggedAt = yesterdayMorning.plusSeconds(3600),
+        )
+
+        yesterdayLogs = repository.observeWaterLogsForDate(yesterday).first()
+        assertEquals(2, yesterdayLogs.size)
+        assertEquals(950, yesterdayLogs.sumOf { it.amountMl })
+        assertEquals(950, repository.observeDiaryDay(yesterday).first().waterMl)
+        assertEquals(0, repository.observeDiaryDay(today).first().waterMl)
+        assertTrue(
+            yesterdayLogs.any { it.id == moved.id && it.source == WaterLogSource.CORRECTION },
+        )
+
+        repository.deleteWaterLog(moved.id)
+        assertEquals(350, repository.observeDiaryDay(yesterday).first().waterMl)
+
+        val corrected = yesterdayLogs.first { it.id == moved.id }
+        repository.restoreWaterLog(corrected)
+        assertEquals(950, repository.observeDiaryDay(yesterday).first().waterMl)
+        assertEquals(2, repository.observeWaterLogsForDate(yesterday).first().size)
+    }
+
+    @Test
+    fun fastsCanBeBackdatedEditedWithANoteAndRestoredAfterDeletion() = runBlocking {
+        val start = Instant.parse("2026-10-17T18:00:00Z")
+        val end = Instant.parse("2026-10-18T10:00:00Z")
+        repository.addFastingSession(
+            targetHours = 16,
+            startedAt = start,
+            endedAt = end,
+            note = "First attempt",
+        )
+
+        val created = repository.observeFastHistory().first().single()
+        assertEquals(yesterday, created.date)
+        assertEquals(960L, created.durationMinutes())
+        assertEquals("First attempt", created.note)
+
+        val newEnd = end.plusSeconds(2 * 3600)
+        repository.updateFastingSession(
+            id = created.id,
+            targetHours = 18,
+            startedAt = start,
+            endedAt = newEnd,
+            note = "Felt strong; electrolytes helped",
+        )
+
+        val updated = repository.observeFastHistory().first().single()
+        assertEquals(created.id, updated.id)
+        assertEquals(18, updated.targetHours)
+        assertEquals(1080L, updated.durationMinutes())
+        assertEquals("Felt strong; electrolytes helped", updated.note)
+
+        repository.deleteFastingSession(updated.id)
+        assertTrue(repository.observeFastHistory().first().isEmpty())
+
+        repository.restoreFastingSession(updated)
+        assertEquals(updated, repository.observeFastHistory().first().single())
     }
 
     @Test

@@ -174,6 +174,107 @@ class RoomAroRepository(
         }
     }
 
+    override suspend fun addWaterLog(date: LocalDate, amountMl: Int, loggedAt: Instant) {
+        if (amountMl <= 0) return
+        val epochDay = date.toEpochDay()
+        val now = System.currentTimeMillis()
+        database.withTransaction {
+            val existing = diaryDao.getDay(epochDay)
+            diaryDao.insertWaterLog(
+                WaterLogEntity(
+                    id = UUID.randomUUID().toString(),
+                    epochDay = epochDay,
+                    amountMl = amountMl,
+                    loggedAt = loggedAt.toEpochMilli(),
+                    source = WaterLogSource.MANUAL.name,
+                ),
+            )
+            diaryDao.upsertDay(
+                (existing ?: newDayRow(epochDay, now)).copy(
+                    waterMl = (existing?.waterMl ?: 0) + amountMl,
+                    updatedAt = now,
+                ),
+            )
+        }
+    }
+
+    override suspend fun updateWaterLog(
+        id: String,
+        date: LocalDate,
+        amountMl: Int,
+        loggedAt: Instant,
+    ) {
+        if (amountMl <= 0) return
+        val newEpochDay = date.toEpochDay()
+        val now = System.currentTimeMillis()
+        database.withTransaction {
+            val oldLog = diaryDao.findWaterLog(id) ?: return@withTransaction
+            val oldEpochDay = oldLog.epochDay
+            val oldDay = diaryDao.getDay(oldEpochDay)
+            val newDay = if (oldEpochDay == newEpochDay) oldDay else diaryDao.getDay(newEpochDay)
+
+            val updated = diaryDao.updateWaterLog(
+                id = id,
+                epochDay = newEpochDay,
+                amountMl = amountMl,
+                loggedAt = loggedAt.toEpochMilli(),
+            )
+            if (updated == 0) return@withTransaction
+
+            if (oldEpochDay == newEpochDay) {
+                val base = oldDay?.waterMl ?: oldLog.amountMl
+                diaryDao.upsertDay(
+                    (oldDay ?: newDayRow(newEpochDay, now)).copy(
+                        waterMl = (base - oldLog.amountMl + amountMl).coerceAtLeast(0),
+                        updatedAt = now,
+                    ),
+                )
+            } else {
+                if (oldDay != null) {
+                    diaryDao.upsertDay(
+                        oldDay.copy(
+                            waterMl = (oldDay.waterMl - oldLog.amountMl).coerceAtLeast(0),
+                            updatedAt = now,
+                        ),
+                    )
+                }
+                diaryDao.upsertDay(
+                    (newDay ?: newDayRow(newEpochDay, now)).copy(
+                        waterMl = (newDay?.waterMl ?: 0) + amountMl,
+                        updatedAt = now,
+                    ),
+                )
+            }
+        }
+    }
+
+    override suspend fun restoreWaterLog(log: WaterLog) {
+        val epochDay = log.date.toEpochDay()
+        val now = System.currentTimeMillis()
+        database.withTransaction {
+            val inserted = diaryDao.insertWaterLogIfAbsent(
+                WaterLogEntity(
+                    id = log.id,
+                    epochDay = epochDay,
+                    amountMl = log.amountMl,
+                    loggedAt = log.loggedAt.toEpochMilli(),
+                    source = log.source.name,
+                ),
+            )
+            // A failed delete may leave the row in place; in that case the aggregate is
+            // already correct and must not be incremented a second time.
+            if (inserted == -1L) return@withTransaction
+
+            val existing = diaryDao.getDay(epochDay)
+            diaryDao.upsertDay(
+                (existing ?: newDayRow(epochDay, now)).copy(
+                    waterMl = (existing?.waterMl ?: 0) + log.amountMl,
+                    updatedAt = now,
+                ),
+            )
+        }
+    }
+
     override suspend fun setWater(date: LocalDate, waterMl: Int) {
         val epochDay = date.toEpochDay()
         val now = System.currentTimeMillis()
@@ -403,6 +504,59 @@ class RoomAroRepository(
 
     override suspend fun deleteFastingSession(id: String) {
         fastingDao.deleteCompletedSession(id)
+    }
+
+    override suspend fun addFastingSession(
+        targetHours: Int,
+        startedAt: Instant,
+        endedAt: Instant,
+        note: String,
+    ) {
+        if (targetHours <= 0 || !endedAt.isAfter(startedAt)) return
+        fastingDao.upsertSession(
+            FastingSessionEntity(
+                id = UUID.randomUUID().toString(),
+                epochDay = dateProvider.dayOf(startedAt).toEpochDay(),
+                targetHours = targetHours,
+                startedAt = startedAt.toEpochMilli(),
+                endedAt = endedAt.toEpochMilli(),
+                createdAt = System.currentTimeMillis(),
+                note = note.trim().ifBlank { null },
+            ),
+        )
+    }
+
+    override suspend fun updateFastingSession(
+        id: String,
+        targetHours: Int,
+        startedAt: Instant,
+        endedAt: Instant,
+        note: String,
+    ) {
+        if (targetHours <= 0 || !endedAt.isAfter(startedAt)) return
+        fastingDao.updateCompletedSession(
+            id = id,
+            epochDay = dateProvider.dayOf(startedAt).toEpochDay(),
+            targetHours = targetHours,
+            startedAt = startedAt.toEpochMilli(),
+            endedAt = endedAt.toEpochMilli(),
+            note = note.trim().ifBlank { null },
+        )
+    }
+
+    override suspend fun restoreFastingSession(session: FastingSession) {
+        val endedAt = session.endedAt ?: return
+        fastingDao.insertSessionIfAbsent(
+            FastingSessionEntity(
+                id = session.id,
+                epochDay = session.date.toEpochDay(),
+                targetHours = session.targetHours,
+                startedAt = session.startedAt.toEpochMilli(),
+                endedAt = endedAt.toEpochMilli(),
+                createdAt = session.createdAt.toEpochMilli(),
+                note = session.note.trim().ifBlank { null },
+            ),
+        )
     }
 
     override suspend fun startFast(targetHours: Int, startedAt: Instant) {

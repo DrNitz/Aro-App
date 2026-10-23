@@ -64,6 +64,20 @@ interface AroRepository {
 
     suspend fun addWater(date: LocalDate, deltaMl: Int)
 
+    /** Adds a drink at a chosen date and time, including backdated entries. */
+    suspend fun addWaterLog(date: LocalDate, amountMl: Int, loggedAt: java.time.Instant) {}
+
+    /** Corrects the volume, date or time of an existing drink. */
+    suspend fun updateWaterLog(
+        id: String,
+        date: LocalDate,
+        amountMl: Int,
+        loggedAt: java.time.Instant,
+    ) {}
+
+    /** Undo path: restores the exact row and re-applies it to its day aggregate. */
+    suspend fun restoreWaterLog(log: WaterLog) {}
+
     suspend fun setWater(date: LocalDate, waterMl: Int)
 
     /** Every individual drink, newest first. */
@@ -164,6 +178,26 @@ interface AroRepository {
     fun observeFastHistory(limit: Int = 200): Flow<List<FastingSession>> = flowOf(emptyList())
 
     suspend fun startFast(targetHours: Int, startedAt: java.time.Instant = java.time.Instant.now())
+
+    /** Adds a completed fast directly, for backdating a missed session. */
+    suspend fun addFastingSession(
+        targetHours: Int,
+        startedAt: java.time.Instant,
+        endedAt: java.time.Instant,
+        note: String = "",
+    ) {}
+
+    /** Corrects a completed fast's window, target or note. */
+    suspend fun updateFastingSession(
+        id: String,
+        targetHours: Int,
+        startedAt: java.time.Instant,
+        endedAt: java.time.Instant,
+        note: String = "",
+    ) {}
+
+    /** Undo path: restores a deleted completed session with its original id. */
+    suspend fun restoreFastingSession(session: FastingSession) {}
 
     suspend fun endFast(endedAt: java.time.Instant = java.time.Instant.now())
 
