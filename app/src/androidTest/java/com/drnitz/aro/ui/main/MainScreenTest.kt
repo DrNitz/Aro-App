@@ -1,24 +1,27 @@
 package com.drnitz.aro.ui.main
 
-import androidx.activity.ComponentActivity
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
-import org.junit.Before
+import com.drnitz.aro.theme.AroTheme
+import com.drnitz.aro.ui.components.AroHeader
 import org.junit.Rule
 import org.junit.Test
 
-/** UI tests for [com.drnitz.aro.ui.main.MainScreen]. */
+/** UI tests for the main screen's persistent header. */
 class MainScreenTest {
 
-  @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
+    @get:Rule
+    val composeTestRule = createComposeRule()
 
-  @Before
-  fun setup() {
-    composeTestRule.setContent { MainScreen() }
-  }
+    @Test
+    fun appHeader_exists() {
+        composeTestRule.setContent {
+            AroTheme {
+                AroHeader(onOpenNotifications = {}, onOpenGoals = {})
+            }
+        }
 
-  @Test
-  fun appHeader_exists() {
-    composeTestRule.onNodeWithText("ARO COMPANION").assertExists()
-  }
+        composeTestRule.onNodeWithText("Aro").assertExists()
+        composeTestRule.onNodeWithText("by Dr.Nitz").assertExists()
+    }
 }
