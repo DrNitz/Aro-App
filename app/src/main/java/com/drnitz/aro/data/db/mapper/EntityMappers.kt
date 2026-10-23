@@ -5,6 +5,7 @@ import com.drnitz.aro.data.db.entity.ConsultationEntity
 import com.drnitz.aro.data.db.entity.DayEntity
 import com.drnitz.aro.data.db.entity.FavoriteFoodEntity
 import com.drnitz.aro.data.db.entity.FoodLogEntity
+import com.drnitz.aro.data.db.entity.MedicationLogEntity
 import com.drnitz.aro.data.db.entity.ProfileEntity
 import com.drnitz.aro.data.db.entity.RecentFoodEntity
 import com.drnitz.aro.data.db.entity.VitalsEntryEntity
@@ -23,6 +24,8 @@ import com.drnitz.aro.domain.model.GlucoseMeasurementContext
 import com.drnitz.aro.domain.model.Goal
 import com.drnitz.aro.domain.model.MacroPreset
 import com.drnitz.aro.domain.model.MealSlot
+import com.drnitz.aro.domain.model.MedicationLog
+import com.drnitz.aro.domain.model.MedicationLogSource
 import com.drnitz.aro.domain.model.NutrientKey
 import com.drnitz.aro.domain.model.NutrientTotals
 import com.drnitz.aro.domain.model.Sex
@@ -360,7 +363,6 @@ fun VitalsEntry.toEntity(): VitalsEntryEntity = VitalsEntryEntity(
 )
 
 // ---- Consultations ---------------------------------------------------------
-
 fun ConsultationEntity.toDomain(): DoctorConsultation = DoctorConsultation(
     id = id,
     date = LocalDate.ofEpochDay(epochDay),
@@ -385,6 +387,32 @@ fun DoctorConsultation.toEntity(): ConsultationEntity = ConsultationEntity(
     recommendedTests = recommendedTests,
     followUpPlan = followUpPlan,
     createdAt = createdAt.toEpochMilli(),
+)
+
+// ---- Medication adherence --------------------------------------------------
+
+fun MedicationLogEntity.toDomain(): MedicationLog = MedicationLog(
+    id = id,
+    medicationId = medicationId,
+    medicationName = medicationName,
+    dosage = dosage,
+    date = LocalDate.ofEpochDay(epochDay),
+    scheduledHour = scheduledHour,
+    scheduledMinute = scheduledMinute,
+    takenAt = Instant.ofEpochMilli(takenAt),
+    source = enumOrDefault(source, MedicationLogSource.MANUAL),
+)
+
+fun MedicationLog.toEntity(): MedicationLogEntity = MedicationLogEntity(
+    id = id,
+    medicationId = medicationId,
+    medicationName = medicationName,
+    dosage = dosage,
+    epochDay = date.toEpochDay(),
+    scheduledHour = scheduledHour,
+    scheduledMinute = scheduledMinute,
+    takenAt = takenAt.toEpochMilli(),
+    source = source.name,
 )
 
 // ---- Helpers ---------------------------------------------------------------

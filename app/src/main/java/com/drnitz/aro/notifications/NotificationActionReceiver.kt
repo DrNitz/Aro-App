@@ -6,10 +6,14 @@ import android.content.Intent
 import com.drnitz.aro.AroApplication
 import com.drnitz.aro.data.db.AroDatabase
 import com.drnitz.aro.data.repository.RoomAroRepository
+import com.drnitz.aro.domain.model.MedicationLog
+import com.drnitz.aro.domain.model.MedicationLogSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
+import java.util.UUID
 
 class NotificationActionReceiver : BroadcastReceiver() {
 
@@ -56,13 +60,37 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 }
             }
             NotificationHelper.ACTION_MARK_TAKEN -> {
+                val medId = intent.getStringExtra(NotificationHelper.EXTRA_MED_ID) ?: ""
                 val medName = intent.getStringExtra(NotificationHelper.EXTRA_MED_NAME) ?: "Medication"
-                NotificationHelper.cancelNotification(context, notificationId)
-                NotificationHelper.showFeedbackNotification(
-                    context,
-                    "Marked Taken",
-                    "$medName taken. Great consistency!",
-                )
+                val medDosage = intent.getStringExtra(NotificationHelper.EXTRA_MED_DOSAGE) ?: ""
+                val pendingResult = goAsync()
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        if (medId.isNotBlank()) {
+                            val now = Instant.now()
+                            val today = app?.dateProvider?.today() ?: LocalDate.now()
+                            repository.logMedicationTaken(
+                                MedicationLog(
+                                    id = UUID.randomUUID().toString(),
+                                    medicationId = medId,
+                                    medicationName = medName,
+                                    dosage = medDosage,
+                                    date = today,
+                                    takenAt = now,
+                                    source = MedicationLogSource.NOTIFICATION,
+                                ),
+                            )
+                        }
+                        NotificationHelper.cancelNotification(context, notificationId)
+                        NotificationHelper.showFeedbackNotification(
+                            context,
+                            "Marked Taken",
+                            "$medName taken. Great consistency!",
+                        )
+                    } finally {
+                        pendingResult.finish()
+                    }
+                }
             }
             NotificationHelper.ACTION_SNOOZE -> {
                 val medId = intent.getStringExtra(NotificationHelper.EXTRA_MED_ID) ?: ""

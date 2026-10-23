@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import com.drnitz.aro.domain.model.MedicationReminder
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -67,9 +68,9 @@ object AroNotificationScheduler {
         return startedAtMillis + targetHours * 3600 * 1000L
     }
 
-    fun scheduleHydrationReminders(context: Context) {
-        val prefs = NotificationPreferences(context)
-        if (!prefs.hydrationEnabled) {
+    suspend fun scheduleHydrationReminders(context: Context) {
+        val settings = NotificationPreferences(context).currentSettings()
+        if (!settings.hydrationEnabled) {
             cancelHydrationReminders(context)
             return
         }
@@ -79,9 +80,9 @@ object AroNotificationScheduler {
         val now = LocalDateTime.now()
         val nextTrigger = calculateNextHydrationTrigger(
             now = now,
-            startHour = prefs.hydrationStartHour,
-            endHour = prefs.hydrationEndHour,
-            intervalHours = prefs.hydrationIntervalHours,
+            startHour = settings.hydrationStartHour,
+            endHour = settings.hydrationEndHour,
+            intervalHours = settings.hydrationIntervalHours,
         )
 
         val triggerAtMillis = nextTrigger.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
@@ -115,9 +116,9 @@ object AroNotificationScheduler {
         alarmManager.cancel(pendingIntent)
     }
 
-    fun scheduleFastingCompletion(context: Context, targetHours: Int, startedAtMillis: Long) {
-        val prefs = NotificationPreferences(context)
-        if (!prefs.fastingEnabled) return
+    suspend fun scheduleFastingCompletion(context: Context, targetHours: Int, startedAtMillis: Long) {
+        val settings = NotificationPreferences(context).currentSettings()
+        if (!settings.fastingEnabled) return
 
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
 
@@ -160,9 +161,11 @@ object AroNotificationScheduler {
         alarmManager.cancel(pendingIntent)
     }
 
-    fun scheduleMedicationReminders(context: Context) {
-        val prefs = NotificationPreferences(context)
-        val medications = prefs.getMedicationReminders().filter { it.enabled }
+    suspend fun scheduleMedicationReminders(context: Context) {
+        val medications = NotificationPreferences(context)
+            .currentSettings()
+            .medicationReminders
+            .filter { it.enabled }
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
 
         medications.forEach { med ->

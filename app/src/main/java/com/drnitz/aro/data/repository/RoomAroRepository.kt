@@ -20,6 +20,7 @@ import com.drnitz.aro.domain.model.DiaryDay
 import com.drnitz.aro.domain.model.DoctorConsultation
 import com.drnitz.aro.domain.model.FoodLogEntry
 import com.drnitz.aro.domain.model.MealSlot
+import com.drnitz.aro.domain.model.MedicationLog
 import com.drnitz.aro.domain.model.NutrientTotals
 import com.drnitz.aro.domain.model.PlanItem
 import com.drnitz.aro.domain.model.PlanOccurrence
@@ -60,6 +61,7 @@ class RoomAroRepository(
     private val consultationDao get() = database.consultationDao()
     private val foodLibraryDao get() = database.foodLibraryDao()
     private val planDao get() = database.planDao()
+    private val medicationLogDao get() = database.medicationLogDao()
 
     // ---- Profile ----------------------------------------------------------
 
@@ -386,6 +388,32 @@ class RoomAroRepository(
 
     override suspend fun getConsultationsInRange(from: LocalDate, toInclusive: LocalDate): List<DoctorConsultation> =
         consultationDao.getConsultationsInRange(from.toEpochDay(), toInclusive.toEpochDay()).map { it.toDomain() }
+
+    // ---- Medication adherence ---------------------------------------------
+
+    override fun observeMedicationLogs(from: LocalDate): Flow<List<MedicationLog>> =
+        medicationLogDao.observeSince(from.toEpochDay()).map { list -> list.map { it.toDomain() } }
+
+    override fun observeAllMedicationLogs(): Flow<List<MedicationLog>> =
+        medicationLogDao.observeAll().map { list -> list.map { it.toDomain() } }
+
+    override suspend fun logMedicationTaken(log: MedicationLog) {
+        medicationLogDao.upsert(log.toEntity())
+    }
+
+    override suspend fun deleteMedicationLog(id: String) {
+        medicationLogDao.delete(id)
+    }
+
+    override suspend fun getMedicationLogsInRange(
+        from: LocalDate,
+        toInclusive: LocalDate,
+    ): List<MedicationLog> =
+        medicationLogDao.getInRange(from.toEpochDay(), toInclusive.toEpochDay()).map { it.toDomain() }
+
+    override suspend fun deleteMedicationLogsForReminder(medicationId: String) {
+        medicationLogDao.deleteForMedication(medicationId)
+    }
 
     // ---- Helpers ----------------------------------------------------------
 

@@ -59,6 +59,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.drnitz.aro.data.library.OfflineExerciseLibrary
 import com.drnitz.aro.data.library.OfflineFoodLibrary
 import com.drnitz.aro.data.library.imageUrlAt
@@ -78,11 +79,12 @@ import com.drnitz.aro.domain.model.PlannedFasting
 import com.drnitz.aro.domain.model.PlannedFood
 import com.drnitz.aro.domain.model.PlannedPill
 import com.drnitz.aro.domain.model.PlannedWater
-import com.drnitz.aro.notifications.MedicationReminder
 import com.drnitz.aro.notifications.NotificationPreferences
+import com.drnitz.aro.domain.model.MedicationReminder
 import com.drnitz.aro.theme.AroTheme
 import com.drnitz.aro.ui.components.ExerciseImage
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import java.time.LocalTime
 import java.util.UUID
@@ -958,7 +960,11 @@ fun PlanPillPickerDialog(
     onSave: (PlanItem) -> Unit,
 ) {
     val context = LocalContext.current
-    val savedMeds = remember { NotificationPreferences(context).getMedicationReminders() }
+    val prefs = remember { NotificationPreferences(context) }
+    val savedMedsFlow = remember(prefs) {
+        prefs.settings.map { it.medicationReminders }
+    }
+    val savedMeds by savedMedsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     var name by remember { mutableStateOf(existing?.title.orEmpty()) }
     var dosage by remember { mutableStateOf(existing?.pill?.dosage.orEmpty()) }
     var savedReminderId by remember { mutableStateOf(existing?.pill?.savedReminderId) }

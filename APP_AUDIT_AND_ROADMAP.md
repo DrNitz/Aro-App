@@ -679,21 +679,21 @@ Harden the app for Google Play or GitHub Releases with code shrinking, release s
 
 ### Unit Tests
 Executed via `./gradlew testDebugUnitTest`:
-- **Suites Executed:** 29
-- **Total Tests:** 294
-- **Passed:** 294 (100%)
+- **Suites Executed:** 30
+- **Total Tests:** 303
+- **Passed:** 303 (100%)
 - **Failures / Errors / Skipped:** 0
 
 ### Android Lint
 Executed via `./gradlew lintDebug`:
 - **Errors:** 0
-- **Warnings:** 40
-  - 13 `ModifierParameter` placement warnings
-  - 12 `DefaultLocale` implicit usage warnings
-  - 6 Compose preview / test warnings
-  - 4 autoboxing / state warnings
-  - 3 notification channel permission warnings
-  - 2 Gradle / version hints
+- **Warnings:** 37
+  - 21 Gradle / version hints
+  - 9 `ModifierParameter` placement warnings
+  - 2 `ObsoleteSdkInt`
+  - 2 `UseKtx`
+  - 2 `ConstantLocale`
+  - 1 `DefaultLocale`
 - **Full Report:** Saved at `app/build/reports/lint-results-debug.html`
 
 ---

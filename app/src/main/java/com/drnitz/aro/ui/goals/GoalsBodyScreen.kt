@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Card
@@ -55,6 +56,7 @@ fun GoalsBodyScreen(
     energyPlan: EnergyPlan,
     onOpenBodyPlanner: () -> Unit,
     onOpenVitals: () -> Unit,
+    onOpenDataManagement: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val bmi = bodyMassIndex(profile.weightKg, profile.heightCm).valueOrNull()
@@ -219,6 +221,27 @@ fun GoalsBodyScreen(
                 title = "Vitals & Doctor Consults",
                 subtitle = "Blood pressure, glucose, ketones, SpO2 and visit notes",
                 onClick = onOpenVitals,
+            )
+        }
+
+        item {
+            Text(
+                text = "APP DATA",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 1.2.sp,
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp, top = 6.dp),
+            )
+        }
+        item {
+            DestinationCard(
+                icon = Icons.Default.Storage,
+                accent = AroTheme.macroColors.water,
+                title = "Data Management & Backup",
+                subtitle = "Export a complete JSON archive or restore it on a new device",
+                onClick = onOpenDataManagement,
             )
         }
         item { Spacer(modifier = Modifier.height(8.dp)) }

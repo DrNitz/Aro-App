@@ -271,7 +271,71 @@ class MigrationTest {
     }
 
     @Test
-    fun allMigrations_from1To6_preservesDataIntegrity() {
+    fun migration6To7_createsMedicationLogs() {
+        helper.createDatabase(testDbName, 6).apply {
+            execSQL(
+                """
+                INSERT INTO days (epoch_day, water_ml, notes, created_at, updated_at)
+                VALUES (19006, 1500, 'Pre-adherence day', 1000, 1000)
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(testDbName, 7, true, AroDatabase.MIGRATION_6_7)
+
+        // Existing data is untouched.
+        val dayCursor = db.query("SELECT notes FROM days WHERE epoch_day = 19006")
+        assertTrue(dayCursor.moveToFirst())
+        assertEquals("Pre-adherence day", dayCursor.getString(0))
+        dayCursor.close()
+
+        db.execSQL(
+            """
+            INSERT INTO medication_logs (
+                id, medication_id, medication_name, dosage, epoch_day,
+                scheduled_hour, scheduled_minute, taken_at, source
+            ) VALUES (
+                'medlog-1', 'med-1', 'Vitamin D3', '5000 IU', 19006,
+                8, 0, 5000, 'NOTIFICATION'
+            )
+            """.trimIndent(),
+        )
+
+        val logCursor = db.query(
+            "SELECT id, medication_id, medication_name, dosage, source FROM medication_logs WHERE id = 'medlog-1'",
+        )
+        assertTrue(logCursor.moveToFirst())
+        assertEquals("medlog-1", logCursor.getString(0))
+        assertEquals("med-1", logCursor.getString(1))
+        assertEquals("Vitamin D3", logCursor.getString(2))
+        assertEquals("5000 IU", logCursor.getString(3))
+        assertEquals("NOTIFICATION", logCursor.getString(4))
+        logCursor.close()
+
+        // The unique (medication_id, epoch_day) index prevents double-counting a dose
+        // while allowing the later entry to replace the earlier one.
+        db.execSQL(
+            """
+            INSERT OR REPLACE INTO medication_logs (
+                id, medication_id, medication_name, dosage, epoch_day,
+                scheduled_hour, scheduled_minute, taken_at, source
+            ) VALUES (
+                'medlog-2', 'med-1', 'Vitamin D3', '5000 IU', 19006,
+                8, 0, 6000, 'MANUAL'
+            )
+            """.trimIndent(),
+        )
+        val countCursor = db.query(
+            "SELECT COUNT(*) FROM medication_logs WHERE medication_id = 'med-1' AND epoch_day = 19006",
+        )
+        assertTrue(countCursor.moveToFirst())
+        assertEquals(1, countCursor.getInt(0))
+        countCursor.close()
+    }
+
+    @Test
+    fun allMigrations_from1To7_preservesDataIntegrity() {
         helper.createDatabase(testDbName, 1).apply {
             execSQL(
                 """
@@ -309,13 +373,14 @@ class MigrationTest {
 
         val db = helper.runMigrationsAndValidate(
             testDbName,
-            6,
+            7,
             true,
             AroDatabase.MIGRATION_1_2,
             AroDatabase.MIGRATION_2_3,
             AroDatabase.MIGRATION_3_4,
             AroDatabase.MIGRATION_4_5,
             AroDatabase.MIGRATION_5_6,
+            AroDatabase.MIGRATION_6_7,
         )
 
         // Verify original profile
@@ -342,5 +407,23 @@ class MigrationTest {
         assertTrue(workoutCursor.isNull(2))
         assertTrue(workoutCursor.isNull(3))
         workoutCursor.close()
+
+        // Verify the adherence table created by the final migration is writable.
+        db.execSQL(
+            """
+            INSERT INTO medication_logs (
+                id, medication_id, medication_name, dosage, epoch_day,
+                scheduled_hour, scheduled_minute, taken_at, source
+            ) VALUES (
+                'medlog-all', 'med-all', 'Creatine', '5 g', 19005,
+                21, 0, 7000, 'MANUAL'
+            )
+            """.trimIndent(),
+        )
+        val medCursor = db.query("SELECT medication_name, source FROM medication_logs WHERE id = 'medlog-all'")
+        assertTrue(medCursor.moveToFirst())
+        assertEquals("Creatine", medCursor.getString(0))
+        assertEquals("MANUAL", medCursor.getString(1))
+        medCursor.close()
     }
 }

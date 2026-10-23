@@ -11,6 +11,7 @@ import com.drnitz.aro.data.db.dao.ConsultationDao
 import com.drnitz.aro.data.db.dao.DiaryDao
 import com.drnitz.aro.data.db.dao.FastingDao
 import com.drnitz.aro.data.db.dao.FoodLibraryDao
+import com.drnitz.aro.data.db.dao.MedicationLogDao
 import com.drnitz.aro.data.db.dao.PlanDao
 import com.drnitz.aro.data.db.dao.ProfileDao
 import com.drnitz.aro.data.db.dao.VitalsDao
@@ -24,6 +25,7 @@ import com.drnitz.aro.data.db.entity.FavoriteFoodEntity
 import com.drnitz.aro.data.db.entity.FoodLogEntity
 import com.drnitz.aro.data.db.entity.MealTemplateEntity
 import com.drnitz.aro.data.db.entity.MealTemplateItemEntity
+import com.drnitz.aro.data.db.entity.MedicationLogEntity
 import com.drnitz.aro.data.db.entity.PlanCompletionEntity
 import com.drnitz.aro.data.db.entity.PlanSeriesEntity
 import com.drnitz.aro.data.db.entity.ProfileEntity
@@ -64,6 +66,7 @@ import com.drnitz.aro.data.db.entity.WorkoutSetEntity
         ConsultationEntity::class,
         PlanSeriesEntity::class,
         PlanCompletionEntity::class,
+        MedicationLogEntity::class,
     ],
     version = AroDatabase.VERSION,
     exportSchema = true,
@@ -80,9 +83,10 @@ abstract class AroDatabase : RoomDatabase() {
     abstract fun vitalsDao(): VitalsDao
     abstract fun consultationDao(): ConsultationDao
     abstract fun planDao(): PlanDao
+    abstract fun medicationLogDao(): MedicationLogDao
 
     companion object {
-        const val VERSION = 6
+        const val VERSION = 7
         const val NAME = "aro.db"
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -224,6 +228,37 @@ abstract class AroDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Medication adherence history. Reminders themselves live in DataStore,
+                // so this table stores a denormalised name/dosage snapshot that remains
+                // readable even after a reminder is edited or deleted.
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `medication_logs` (
+                        `id` TEXT NOT NULL,
+                        `medication_id` TEXT NOT NULL,
+                        `medication_name` TEXT NOT NULL,
+                        `dosage` TEXT NOT NULL,
+                        `epoch_day` INTEGER NOT NULL,
+                        `scheduled_hour` INTEGER,
+                        `scheduled_minute` INTEGER,
+                        `taken_at` INTEGER NOT NULL,
+                        `source` TEXT NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_medication_logs_medication_id` ON `medication_logs` (`medication_id`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_medication_logs_epoch_day` ON `medication_logs` (`epoch_day`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_medication_logs_taken_at` ON `medication_logs` (`taken_at`)")
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_medication_logs_medication_id_epoch_day` " +
+                        "ON `medication_logs` (`medication_id`, `epoch_day`)",
+                )
+            }
+        }
+
         @Volatile
         private var instance: AroDatabase? = null
 
@@ -235,7 +270,14 @@ abstract class AroDatabase : RoomDatabase() {
         private fun build(context: Context): AroDatabase =
             Room.databaseBuilder(context, AroDatabase::class.java, NAME)
                 .setJournalMode(JournalMode.WRITE_AHEAD_LOGGING)
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(
+                    MIGRATION_1_2,
+                    MIGRATION_2_3,
+                    MIGRATION_3_4,
+                    MIGRATION_4_5,
+                    MIGRATION_5_6,
+                    MIGRATION_6_7,
+                )
                 .addCallback(object : Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) {
                         super.onOpen(db)

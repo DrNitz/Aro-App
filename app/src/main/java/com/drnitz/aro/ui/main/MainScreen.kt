@@ -79,6 +79,7 @@ import com.drnitz.aro.AroApplication
 import com.drnitz.aro.BodyPlanner
 import com.drnitz.aro.ClinicalAudit
 import com.drnitz.aro.ClinicalRecords
+import com.drnitz.aro.DataManagement
 import com.drnitz.aro.PlanDeepLink
 import com.drnitz.aro.data.db.AroDatabase
 import com.drnitz.aro.data.library.OfflineExerciseLibrary
@@ -171,6 +172,7 @@ fun MainScreen(
 
     val state by vm.uiState.collectAsStateWithLifecycle()
     val planState by vm.planState.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(planDeepLink?.requestId) {
         planDeepLink?.let { vm.selectDate(it.date) }
@@ -220,7 +222,13 @@ fun MainScreen(
                 onResetWater = vm::resetWater,
                 onStartFast = { hours ->
                     vm.startFast(hours)
-                    AroNotificationScheduler.scheduleFastingCompletion(context, hours, System.currentTimeMillis())
+                    scope.launch {
+                        AroNotificationScheduler.scheduleFastingCompletion(
+                            context,
+                            hours,
+                            System.currentTimeMillis(),
+                        )
+                    }
                 },
                 onEndFast = {
                     vm.endFast()
@@ -492,6 +500,7 @@ internal fun MainScreenContent(
                     energyPlan = state.energyPlan,
                     onOpenBodyPlanner = { onItemClick(BodyPlanner) },
                     onOpenVitals = { onItemClick(ClinicalRecords(0)) },
+                    onOpenDataManagement = { onItemClick(DataManagement) },
                 )
             }
         }

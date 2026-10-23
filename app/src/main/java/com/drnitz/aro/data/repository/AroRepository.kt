@@ -4,6 +4,7 @@ import com.drnitz.aro.domain.model.CuratedFoodItem
 import com.drnitz.aro.domain.model.DiaryDay
 import com.drnitz.aro.domain.model.DoctorConsultation
 import com.drnitz.aro.domain.model.FoodLogEntry
+import com.drnitz.aro.domain.model.MedicationLog
 import com.drnitz.aro.domain.model.NutrientTotals
 import com.drnitz.aro.domain.model.PlanItem
 import com.drnitz.aro.domain.model.PlanOccurrence
@@ -175,6 +176,22 @@ interface AroRepository {
     suspend fun deleteConsultation(id: String)
 
     suspend fun getConsultationsInRange(from: LocalDate, toInclusive: LocalDate): List<DoctorConsultation>
+
+    // ---- Medication adherence ---------------------------------------------
+
+    /** Dose log for the adherence window, newest first. */
+    fun observeMedicationLogs(from: LocalDate): Flow<List<MedicationLog>> = flowOf(emptyList())
+
+    fun observeAllMedicationLogs(): Flow<List<MedicationLog>> = flowOf(emptyList())
+
+    suspend fun logMedicationTaken(log: MedicationLog) {}
+
+    suspend fun deleteMedicationLog(id: String) {}
+
+    suspend fun getMedicationLogsInRange(from: LocalDate, toInclusive: LocalDate): List<MedicationLog> =
+        emptyList()
+
+    suspend fun deleteMedicationLogsForReminder(medicationId: String) {}
 }
 
 /** Non-nutrition profile settings that Task 4's domain model deliberately excludes. */

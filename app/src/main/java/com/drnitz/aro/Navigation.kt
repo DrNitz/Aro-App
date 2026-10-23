@@ -10,6 +10,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import com.drnitz.aro.ui.main.MainScreen
 import com.drnitz.aro.ui.planner.BodyPlannerScreen
+import com.drnitz.aro.ui.settings.DataManagementScreen
 import com.drnitz.aro.ui.vitals.VitalsScreen
 
 @Composable
@@ -60,6 +61,12 @@ fun MainNavigation(
         entry<ClinicalRecords> { recordKey ->
           VitalsScreen(
             initialTab = recordKey.initialTab,
+            onBack = { backStack.removeLastOrNull() },
+            modifier = Modifier.safeDrawingPadding(),
+          )
+        }
+        entry<DataManagement> {
+          DataManagementScreen(
             onBack = { backStack.removeLastOrNull() },
             modifier = Modifier.safeDrawingPadding(),
           )

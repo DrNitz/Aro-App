@@ -61,6 +61,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -74,12 +75,23 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.drnitz.aro.AroApplication
+import com.drnitz.aro.data.db.AroDatabase
+import com.drnitz.aro.data.db.SystemDateProvider
+import com.drnitz.aro.data.repository.RoomAroRepository
+import com.drnitz.aro.domain.model.MedicationLog
+import com.drnitz.aro.domain.model.MedicationLogSource
+import com.drnitz.aro.domain.model.MedicationReminder
 import com.drnitz.aro.notifications.AroNotificationScheduler
-import com.drnitz.aro.notifications.MedicationReminder
 import com.drnitz.aro.notifications.NotificationHelper
 import com.drnitz.aro.notifications.NotificationPreferences
+import com.drnitz.aro.notifications.NotificationSettings
 import com.drnitz.aro.theme.AroTheme
+import kotlinx.coroutines.launch
+import java.time.Instant
 import java.util.Locale
+import java.util.UUID
 
 @Composable
 fun NotificationSettingsDialog(
@@ -87,15 +99,20 @@ fun NotificationSettingsDialog(
 ) {
     val context = LocalContext.current
     val prefs = remember { NotificationPreferences(context) }
+    val scope = rememberCoroutineScope()
 
-    var hydrationEnabled by remember { mutableStateOf(prefs.hydrationEnabled) }
-    var hydrationInterval by remember { mutableIntStateOf(prefs.hydrationIntervalHours) }
-    var hydrationStartHour by remember { mutableIntStateOf(prefs.hydrationStartHour) }
-    var hydrationEndHour by remember { mutableIntStateOf(prefs.hydrationEndHour) }
+    val settings by prefs.settings.collectAsStateWithLifecycle(initialValue = NotificationSettings())
+    val hydrationEnabled = settings.hydrationEnabled
+    val hydrationInterval = settings.hydrationIntervalHours
+    val hydrationStartHour = settings.hydrationStartHour
+    val hydrationEndHour = settings.hydrationEndHour
+    val fastingEnabled = settings.fastingEnabled
+    val medicationList = settings.medicationReminders
 
-    var fastingEnabled by remember { mutableStateOf(prefs.fastingEnabled) }
+    val app = context.applicationContext as? AroApplication
+    val repository = remember { app?.repository ?: RoomAroRepository(AroDatabase.get(context)) }
+    val dateProvider = remember { app?.dateProvider ?: SystemDateProvider() }
 
-    var medicationList by remember { mutableStateOf(prefs.getMedicationReminders()) }
     var showAddMedDialog by remember { mutableStateOf(false) }
 
     // Android 13+ Notification Permission State
@@ -277,12 +294,13 @@ fun NotificationSettingsDialog(
                                     Switch(
                                         checked = hydrationEnabled,
                                         onCheckedChange = { checked ->
-                                            hydrationEnabled = checked
-                                            prefs.hydrationEnabled = checked
-                                            if (checked) {
-                                                AroNotificationScheduler.scheduleHydrationReminders(context)
-                                            } else {
-                                                AroNotificationScheduler.cancelHydrationReminders(context)
+                                            scope.launch {
+                                                prefs.setHydrationEnabled(checked)
+                                                if (checked) {
+                                                    AroNotificationScheduler.scheduleHydrationReminders(context)
+                                                } else {
+                                                    AroNotificationScheduler.cancelHydrationReminders(context)
+                                                }
                                             }
                                         },
                                         colors = SwitchDefaults.colors(
@@ -308,9 +326,10 @@ fun NotificationSettingsDialog(
                                             FilterChip(
                                                 selected = hydrationInterval == hours,
                                                 onClick = {
-                                                    hydrationInterval = hours
-                                                    prefs.hydrationIntervalHours = hours
-                                                    AroNotificationScheduler.scheduleHydrationReminders(context)
+                                                    scope.launch {
+                                                        prefs.setHydrationIntervalHours(hours)
+                                                        AroNotificationScheduler.scheduleHydrationReminders(context)
+                                                    }
                                                 },
                                                 label = { Text("Every ${hours}h") },
                                                 colors = FilterChipDefaults.filterChipColors(
@@ -387,10 +406,11 @@ fun NotificationSettingsDialog(
                                     Switch(
                                         checked = fastingEnabled,
                                         onCheckedChange = { checked ->
-                                            fastingEnabled = checked
-                                            prefs.fastingEnabled = checked
-                                            if (!checked) {
-                                                AroNotificationScheduler.cancelFastingCompletion(context)
+                                            scope.launch {
+                                                prefs.setFastingEnabled(checked)
+                                                if (!checked) {
+                                                    AroNotificationScheduler.cancelFastingCompletion(context)
+                                                }
                                             }
                                         },
                                         colors = SwitchDefaults.colors(
@@ -499,22 +519,25 @@ fun NotificationSettingsDialog(
                                             MedicationItemRow(
                                                 reminder = med,
                                                 onToggle = { enabled ->
-                                                    val updated = med.copy(enabled = enabled)
-                                                    prefs.addMedicationReminder(updated)
-                                                    medicationList = prefs.getMedicationReminders()
-                                                    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
-                                                    if (alarmManager != null) {
-                                                        if (enabled) {
-                                                            AroNotificationScheduler.scheduleSingleMedication(context, alarmManager, updated)
-                                                        } else {
-                                                            AroNotificationScheduler.cancelMedicationReminder(context, updated.id)
+                                                    scope.launch {
+                                                        val updated = med.copy(enabled = enabled)
+                                                        prefs.addMedicationReminder(updated)
+                                                        val alarmManager =
+                                                            context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
+                                                        if (alarmManager != null) {
+                                                            if (enabled) {
+                                                                AroNotificationScheduler.scheduleSingleMedication(context, alarmManager, updated)
+                                                            } else {
+                                                                AroNotificationScheduler.cancelMedicationReminder(context, updated.id)
+                                                            }
                                                         }
                                                     }
                                                 },
                                                 onDelete = {
-                                                    prefs.deleteMedicationReminder(med.id)
-                                                    medicationList = prefs.getMedicationReminders()
-                                                    AroNotificationScheduler.cancelMedicationReminder(context, med.id)
+                                                    scope.launch {
+                                                        prefs.deleteMedicationReminder(med.id)
+                                                        AroNotificationScheduler.cancelMedicationReminder(context, med.id)
+                                                    }
                                                 },
                                                 onTest = {
                                                     NotificationHelper.showMedicationNotification(
@@ -523,6 +546,28 @@ fun NotificationSettingsDialog(
                                                         name = med.name,
                                                         dosage = med.dosage,
                                                     )
+                                                },
+                                                onLogDose = {
+                                                    scope.launch {
+                                                        repository.logMedicationTaken(
+                                                            MedicationLog(
+                                                                id = UUID.randomUUID().toString(),
+                                                                medicationId = med.id,
+                                                                medicationName = med.name,
+                                                                dosage = med.dosage,
+                                                                date = dateProvider.today(),
+                                                                scheduledHour = med.hour,
+                                                                scheduledMinute = med.minute,
+                                                                takenAt = Instant.now(),
+                                                                source = MedicationLogSource.MANUAL,
+                                                            ),
+                                                        )
+                                                        NotificationHelper.showFeedbackNotification(
+                                                            context,
+                                                            "Dose Logged",
+                                                            "${med.name} recorded for today.",
+                                                        )
+                                                    }
                                                 },
                                             )
                                         }
@@ -623,20 +668,22 @@ fun NotificationSettingsDialog(
         AddMedicationDialog(
             onDismiss = { showAddMedDialog = false },
             onSave = { name, dosage, hour, minute ->
-                val newMed = MedicationReminder(
-                    name = name,
-                    dosage = dosage,
-                    hour = hour,
-                    minute = minute,
-                    enabled = true,
-                )
-                prefs.addMedicationReminder(newMed)
-                medicationList = prefs.getMedicationReminders()
-                val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
-                if (alarmManager != null) {
-                    AroNotificationScheduler.scheduleSingleMedication(context, alarmManager, newMed)
+                scope.launch {
+                    val newMed = MedicationReminder(
+                        name = name,
+                        dosage = dosage,
+                        hour = hour,
+                        minute = minute,
+                        enabled = true,
+                        createdAt = System.currentTimeMillis(),
+                    )
+                    prefs.addMedicationReminder(newMed)
+                    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
+                    if (alarmManager != null) {
+                        AroNotificationScheduler.scheduleSingleMedication(context, alarmManager, newMed)
+                    }
+                    showAddMedDialog = false
                 }
-                showAddMedDialog = false
             },
         )
     }
@@ -648,6 +695,7 @@ private fun MedicationItemRow(
     onToggle: (Boolean) -> Unit,
     onDelete: () -> Unit,
     onTest: () -> Unit,
+    onLogDose: () -> Unit,
 ) {
     Surface(
         shape = RoundedCornerShape(12.dp),
@@ -677,6 +725,18 @@ private fun MedicationItemRow(
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = onLogDose,
+                    modifier = Modifier.size(28.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = "Log dose taken",
+                        tint = Color(0xFF10B981),
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+
                 OutlinedButton(
                     onClick = onTest,
                     shape = RoundedCornerShape(8.dp),

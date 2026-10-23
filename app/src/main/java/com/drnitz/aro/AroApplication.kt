@@ -1,6 +1,7 @@
 package com.drnitz.aro
 
 import android.app.Application
+import com.drnitz.aro.data.backup.DataBackupManager
 import com.drnitz.aro.data.db.AroDatabase
 import com.drnitz.aro.data.db.DateProvider
 import com.drnitz.aro.data.db.SystemDateProvider
@@ -11,6 +12,7 @@ import com.drnitz.aro.data.repository.AroRepository
 import com.drnitz.aro.data.repository.RoomAroRepository
 import com.drnitz.aro.notifications.AroNotificationScheduler
 import com.drnitz.aro.notifications.NotificationHelper
+import com.drnitz.aro.notifications.NotificationPreferences
 import com.drnitz.aro.notifications.PlanReminderManager
 import com.drnitz.aro.notifications.PlanReminderScheduler
 import kotlinx.coroutines.CoroutineScope
@@ -25,6 +27,10 @@ class AroApplication : Application() {
     val exerciseLibrary: OfflineExerciseLibrary by lazy { OfflineExerciseLibrary(this) }
     val foodLibrary: OfflineFoodLibrary by lazy { OfflineFoodLibrary(this) }
     val openFoodFactsClient: OpenFoodFactsClient by lazy { OpenFoodFactsClient() }
+    val notificationPreferences: NotificationPreferences by lazy { NotificationPreferences(this) }
+    val backupManager: DataBackupManager by lazy {
+        DataBackupManager(database, notificationPreferences)
+    }
     val planReminderScheduler: PlanReminderScheduler by lazy {
         PlanReminderManager(this, repository)
     }
@@ -34,8 +40,10 @@ class AroApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         NotificationHelper.createNotificationChannels(this)
-        AroNotificationScheduler.scheduleHydrationReminders(this)
-        AroNotificationScheduler.scheduleMedicationReminders(this)
+        applicationScope.launch {
+            AroNotificationScheduler.scheduleHydrationReminders(this@AroApplication)
+            AroNotificationScheduler.scheduleMedicationReminders(this@AroApplication)
+        }
         // Rebuild plan alarms whenever the process starts. This is cheap (one query per
         // series), and it repairs alarms after an app update or an interrupted edit.
         applicationScope.launch { planReminderScheduler.rescheduleAll() }

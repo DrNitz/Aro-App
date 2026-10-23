@@ -8,19 +8,24 @@ import com.drnitz.aro.data.db.DateProvider
 import com.drnitz.aro.data.db.SystemDateProvider
 import com.drnitz.aro.data.repository.AroRepository
 import com.drnitz.aro.domain.clinical.ClinicalAuditEngine
+import com.drnitz.aro.domain.clinical.calculateMedicationAdherence
 import com.drnitz.aro.domain.model.DoctorConsultation
+import com.drnitz.aro.domain.model.MedicationAdherence
 import com.drnitz.aro.domain.model.NutrientKey
 import com.drnitz.aro.domain.model.NutrientTotals
 import com.drnitz.aro.domain.model.UserProfile
 import com.drnitz.aro.domain.model.VitalsEntry
 import com.drnitz.aro.export.ClinicalPdfGenerator
 import com.drnitz.aro.export.ClinicalReportData
+import com.drnitz.aro.notifications.NotificationSettings
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -41,23 +46,31 @@ sealed interface VitalsUiState {
         val sodiumMg: Double?,
         val potassiumMg: Double?,
         val clinicalFindings: List<String>,
+        val medicationAdherence: MedicationAdherence,
     ) : VitalsUiState
 }
 
 class VitalsViewModel(
     private val repository: AroRepository,
     private val dateProvider: DateProvider = SystemDateProvider(),
+    notificationSettings: Flow<NotificationSettings> = flowOf(NotificationSettings()),
 ) : ViewModel() {
 
     private val selectedTabFlow = MutableStateFlow(0)
     val selectedTab: StateFlow<Int> = selectedTabFlow
+
+    private val medicationInputs = combine(
+        notificationSettings,
+        repository.observeMedicationLogs(dateProvider.today().minusDays(29)),
+    ) { settings, logs -> settings to logs }
 
     val uiState: StateFlow<VitalsUiState> = combine(
         repository.observeProfile(),
         repository.observeAllVitals(),
         repository.observeAllConsultations(),
         repository.observeDayTotals(dateProvider.today()),
-    ) { profileRaw, vitalsList, consultsList, todayTotals ->
+        medicationInputs,
+    ) { profileRaw, vitalsList, consultsList, todayTotals, medication ->
         val profile = profileRaw ?: UserProfile.DEFAULT
         val latest = vitalsList.maxByOrNull { it.timestamp }
 
@@ -67,6 +80,13 @@ class VitalsViewModel(
 
         val auditResult = ClinicalAuditEngine.assess(todayTotals)
         val findingsText = auditResult.findings.map { it.message }
+
+        val (notificationSnapshot, medicationLogs) = medication
+        val adherence = calculateMedicationAdherence(
+            reminders = notificationSnapshot.medicationReminders,
+            logs = medicationLogs,
+            today = dateProvider.today(),
+        )
 
         VitalsUiState.Success(
             profile = profile,
@@ -78,6 +98,7 @@ class VitalsViewModel(
             sodiumMg = sodium,
             potassiumMg = potassium,
             clinicalFindings = findingsText,
+            medicationAdherence = adherence,
         )
     }.stateIn(
         viewModelScope,
@@ -209,10 +230,11 @@ class VitalsViewModel(
         fun factory(
             repository: AroRepository,
             dateProvider: DateProvider = SystemDateProvider(),
+            notificationSettings: Flow<NotificationSettings> = flowOf(NotificationSettings()),
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return VitalsViewModel(repository, dateProvider) as T
+                return VitalsViewModel(repository, dateProvider, notificationSettings) as T
             }
         }
     }

@@ -19,9 +19,16 @@ class AlarmBroadcastReceiver : BroadcastReceiver() {
 
         when (intent.getStringExtra(AroNotificationScheduler.EXTRA_ALARM_TYPE)) {
             AroNotificationScheduler.TYPE_HYDRATION -> {
-                NotificationHelper.showHydrationNotification(context)
-                // Continuously chain next interval
-                AroNotificationScheduler.scheduleHydrationReminders(context)
+                val pendingResult = goAsync()
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        NotificationHelper.showHydrationNotification(context)
+                        // Continuously chain next interval
+                        AroNotificationScheduler.scheduleHydrationReminders(context)
+                    } finally {
+                        pendingResult.finish()
+                    }
+                }
             }
             AroNotificationScheduler.TYPE_FASTING -> {
                 val hours = intent.getIntExtra(AroNotificationScheduler.EXTRA_HOURS, 16)
@@ -29,13 +36,22 @@ class AlarmBroadcastReceiver : BroadcastReceiver() {
             }
             AroNotificationScheduler.TYPE_MEDICATION -> {
                 val medId = intent.getStringExtra(NotificationHelper.EXTRA_MED_ID) ?: ""
-                val prefs = NotificationPreferences(context)
-                val med = prefs.getMedicationReminders().find { it.id == medId && it.enabled }
-                if (med != null) {
-                    NotificationHelper.showMedicationNotification(context, med.id, med.name, med.dosage)
-                    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? android.app.AlarmManager
-                    if (alarmManager != null) {
-                        AroNotificationScheduler.scheduleSingleMedication(context, alarmManager, med)
+                val pendingResult = goAsync()
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        val med = NotificationPreferences(context)
+                            .currentSettings()
+                            .medicationReminders
+                            .find { it.id == medId && it.enabled }
+                        if (med != null) {
+                            NotificationHelper.showMedicationNotification(context, med.id, med.name, med.dosage)
+                            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? android.app.AlarmManager
+                            if (alarmManager != null) {
+                                AroNotificationScheduler.scheduleSingleMedication(context, alarmManager, med)
+                            }
+                        }
+                    } finally {
+                        pendingResult.finish()
                     }
                 }
             }

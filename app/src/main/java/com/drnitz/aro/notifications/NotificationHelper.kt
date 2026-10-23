@@ -218,6 +218,7 @@ object NotificationHelper {
             action = ACTION_MARK_TAKEN
             putExtra(EXTRA_MED_ID, medId)
             putExtra(EXTRA_MED_NAME, name)
+            putExtra(EXTRA_MED_DOSAGE, dosage)
             putExtra(EXTRA_NOTIFICATION_ID, notificationId)
         }
         val markTakenPendingIntent = PendingIntent.getBroadcast(

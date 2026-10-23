@@ -1,5 +1,6 @@
 package com.drnitz.aro.notifications
 
+import com.drnitz.aro.domain.model.MedicationReminder
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals

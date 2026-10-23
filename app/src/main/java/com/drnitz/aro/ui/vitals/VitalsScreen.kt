@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.MedicalServices
+import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
@@ -42,6 +43,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -77,8 +79,10 @@ import com.drnitz.aro.domain.model.BloodPressureStage
 import com.drnitz.aro.domain.model.DoctorConsultation
 import com.drnitz.aro.domain.model.GlucoseCategory
 import com.drnitz.aro.domain.model.GlucoseMeasurementContext
+import com.drnitz.aro.domain.model.MedicationAdherence
 import com.drnitz.aro.domain.model.VitalsEntry
 import com.drnitz.aro.export.ClinicalPdfGenerator
+import com.drnitz.aro.notifications.NotificationPreferences
 import com.drnitz.aro.theme.AroTheme
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -93,7 +97,13 @@ fun VitalsScreen(
 ) {
     val context = LocalContext.current
     val effectiveRepo = repository ?: (context.applicationContext as AroApplication).repository
-    val vm: VitalsViewModel = viewModel(factory = VitalsViewModel.factory(effectiveRepo))
+    val notificationPreferences = remember { NotificationPreferences(context) }
+    val vm: VitalsViewModel = viewModel(
+        factory = VitalsViewModel.factory(
+            effectiveRepo,
+            notificationSettings = notificationPreferences.settings,
+        ),
+    )
 
     LaunchedEffect(initialTab) {
         vm.selectTab(initialTab)
@@ -200,6 +210,7 @@ fun VitalsScreen(
                         )
                         1 -> ConsultationsTabContent(
                             consultations = s.consultations,
+                            adherence = s.medicationAdherence,
                             onOpenLogConsult = { showLogConsultDialog = true },
                             onDeleteConsult = vm::deleteConsultation,
                         )
@@ -512,6 +523,7 @@ private fun VitalsHistoryCard(
 @Composable
 private fun ConsultationsTabContent(
     consultations: List<DoctorConsultation>,
+    adherence: MedicationAdherence,
     onOpenLogConsult: () -> Unit,
     onDeleteConsult: (String) -> Unit,
 ) {
@@ -538,6 +550,10 @@ private fun ConsultationsTabContent(
             }
         }
 
+        if (adherence.hasData) {
+            item { MedicationAdherenceCard(adherence) }
+        }
+
         item {
             Text(
                 text = "DOCTOR VISITS & NOTES (${consultations.size})",
@@ -559,6 +575,101 @@ private fun ConsultationsTabContent(
         } else {
             items(consultations) { consult ->
                 ConsultationCard(consultation = consult, onDelete = { onDeleteConsult(consult.id) })
+            }
+        }
+    }
+}
+
+@Composable
+private fun MedicationAdherenceCard(adherence: MedicationAdherence) {
+    Card(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Medication,
+                        contentDescription = null,
+                        tint = Color(0xFF10B981),
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = "Medication Adherence",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = "Last ${adherence.windowDays} days",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
+                Text(
+                    text = "${adherence.overallPercent}%",
+                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                    color = Color(0xFF10B981),
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            LinearProgressIndicator(
+                progress = { adherence.overallPercent / 100f },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(CircleShape),
+                color = Color(0xFF10B981),
+                trackColor = Color(0xFF10B981).copy(alpha = 0.15f),
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "${adherence.takenDoses} of ${adherence.expectedDoses} expected doses logged",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            adherence.entries.forEach { entry ->
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = entry.name,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = "${entry.takenDays} of ${entry.expectedDays} days" +
+                                if (entry.dosage.isNotBlank()) " • ${entry.dosage}" else "",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Text(
+                        text = "${entry.percent}%",
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                        color = if (entry.percent >= 80) Color(0xFF10B981) else Color(0xFFF59E0B),
+                    )
+                }
             }
         }
     }
