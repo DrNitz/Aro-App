@@ -731,7 +731,7 @@ internal fun AddFoodDialog(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            items(categories.size) { index ->
+                            items(categories.size, key = { categories[it] }) { index ->
                                 val cat = categories[index]
                                 FilterChip(
                                     selected = selectedCategory == cat,
@@ -775,7 +775,7 @@ internal fun AddFoodDialog(
                                     .weight(1f),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
-                                items(offlineResults.size) { index ->
+                                items(offlineResults.size, key = { offlineResults[it].id }) { index ->
                                     val item = offlineResults[index]
                                     FoodItemCard(
                                         item = item,
@@ -848,7 +848,7 @@ internal fun AddFoodDialog(
                                     .weight(1f),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
-                                items(onlineResults.size) { index ->
+                                items(onlineResults.size, key = { onlineResults[it].id }) { index ->
                                     val item = onlineResults[index]
                                     FoodItemCard(
                                         item = item,

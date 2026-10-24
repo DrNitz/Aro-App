@@ -425,7 +425,7 @@ private fun VitalsTabContent(
                 )
             }
         } else {
-            items(vitals) { entry ->
+            items(vitals, key = { it.id }) { entry ->
                 VitalsHistoryCard(entry = entry, onDelete = { onDeleteVitals(entry.id) })
             }
         }
@@ -573,7 +573,7 @@ private fun ConsultationsTabContent(
                 )
             }
         } else {
-            items(consultations) { consult ->
+            items(consultations, key = { it.id }) { consult ->
                 ConsultationCard(consultation = consult, onDelete = { onDeleteConsult(consult.id) })
             }
         }

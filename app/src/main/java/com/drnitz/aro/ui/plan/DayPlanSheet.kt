@@ -152,7 +152,7 @@ fun DayPlanSheet(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(PlanItemType.entries) { type ->
+                    items(PlanItemType.entries, key = { it.name }) { type ->
                         val count = items.count { it.item.type == type }
                         FilterChip(
                             selected = activeType == type,

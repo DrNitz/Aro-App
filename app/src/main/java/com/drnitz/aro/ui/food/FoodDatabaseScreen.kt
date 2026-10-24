@@ -293,7 +293,7 @@ fun FoodDatabaseScreen(
             if (source == FoodSource.OFFLINE) {
                 Spacer(modifier = Modifier.height(6.dp))
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(FoodFilter.entries.toList()) { option ->
+                    items(FoodFilter.entries.toList(), key = { it.name }) { option ->
                         FilterChip(
                             selected = filter == option,
                             onClick = { filter = option },
@@ -317,7 +317,7 @@ fun FoodDatabaseScreen(
                 if (filter == FoodFilter.ALL || filter == FoodFilter.CURATED) {
                     Spacer(modifier = Modifier.height(4.dp))
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(categories) { category ->
+                        items(categories, key = { it }) { category ->
                             FilterChip(
                                 selected = selectedCategory == category,
                                 onClick = { selectedCategory = category },
@@ -734,7 +734,7 @@ private fun PortionPickerDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(MealSlot.ORDERED) { slot ->
+                    items(MealSlot.ORDERED, key = { it.name }) { slot ->
                         FilterChip(
                             selected = meal == slot,
                             onClick = { meal = slot },

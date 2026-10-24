@@ -215,7 +215,7 @@ fun PlanTabScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            items(PlanItemType.entries) { type ->
+                            items(PlanItemType.entries, key = { it.name }) { type ->
                                 OutlinedButton(
                                     onClick = {
                                         editingItem = null

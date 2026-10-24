@@ -443,7 +443,7 @@ fun GymRestTimerCard(
                             180 to "3 min",
                             300 to "5 min",
                         )
-                        items(presets) { (secs, label) ->
+                        items(presets, key = { it.first }) { (secs, label) ->
                             FilterChip(
                                 selected = snapshot.totalSeconds == secs,
                                 onClick = { timerState.start(secs) },

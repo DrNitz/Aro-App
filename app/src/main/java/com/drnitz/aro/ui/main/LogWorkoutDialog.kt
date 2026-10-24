@@ -739,7 +739,8 @@ internal fun LogWorkoutDialog(
                                     .weight(1f),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
-                                items(sets.size) { index ->
+                                // In-place editable rows (no stable id) — index key is intentional
+                                items(sets.size, key = { it }) { index ->
                                     val currentSet = sets[index]
                                     Card(
                                         shape = RoundedCornerShape(12.dp),
@@ -1014,7 +1015,7 @@ internal fun LogWorkoutDialog(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            items(muscleGroups.size) { index ->
+                            items(muscleGroups.size, key = { muscleGroups[it] }) { index ->
                                 val muscle = muscleGroups[index]
                                 FilterChip(
                                     selected = selectedMuscle == muscle,
@@ -1033,7 +1034,7 @@ internal fun LogWorkoutDialog(
                                 .weight(1f),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            items(exerciseResults.size) { index ->
+                            items(exerciseResults.size, key = { exerciseResults[it].id }) { index ->
                                 val exercise = exerciseResults[index]
                                 Card(
                                     shape = RoundedCornerShape(12.dp),
@@ -1503,7 +1504,7 @@ internal fun LogWorkoutDialog(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            items(cardioCategories.size) { index ->
+                            items(cardioCategories.size, key = { cardioCategories[it] }) { index ->
                                 val cat = cardioCategories[index]
                                 FilterChip(
                                     selected = selectedCardioCategory == cat,
@@ -1522,7 +1523,7 @@ internal fun LogWorkoutDialog(
                                 .weight(1f),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            items(filteredCardioActivities.size) { index ->
+                            items(filteredCardioActivities.size, key = { filteredCardioActivities[it].id }) { index ->
                                 val activity = filteredCardioActivities[index]
                                 Card(
                                     shape = RoundedCornerShape(12.dp),

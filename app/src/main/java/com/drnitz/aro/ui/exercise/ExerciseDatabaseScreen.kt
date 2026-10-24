@@ -259,7 +259,7 @@ fun ExerciseDatabaseScreen(
             )
             Spacer(modifier = Modifier.height(4.dp))
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(MUSCLE_GROUPS) { group ->
+                items(MUSCLE_GROUPS, key = { it }) { group ->
                     FilterChip(
                         selected = muscleGroup == group,
                         onClick = { muscleGroup = group },
@@ -281,7 +281,7 @@ fun ExerciseDatabaseScreen(
             )
             Spacer(modifier = Modifier.height(4.dp))
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(EQUIPMENT_GROUPS) { equipment ->
+                items(EQUIPMENT_GROUPS, key = { it }) { equipment ->
                     FilterChip(
                         selected = equipmentGroup == equipment,
                         onClick = { equipmentGroup = equipment },

@@ -1,7 +1,6 @@
 # ProGuard/R8 rules for Aro.
-# Currently isMinifyEnabled = false in build.gradle.kts, so these rules are inert
-# today — they exist so enabling R8 for the release buildType never breaks Room,
-# kotlinx.serialization or the Nav3 keys.
+# Applied by the release buildType (isMinifyEnabled = true). They keep Room,
+# kotlinx.serialization and the Nav3 keys intact through shrinking.
 
 # ---- kotlinx.serialization ------------------------------------------------
 # Keep generated serializers for @Serializable classes and their companions.
