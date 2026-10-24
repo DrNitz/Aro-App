@@ -53,6 +53,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -310,6 +311,14 @@ internal fun MainScreenContent(
         showPlanView = true
         returnToPlanAfterPlanAdd = false
         onPlanDeepLinkHandled(link.requestId)
+    }
+
+    // The full-screen plan view lives inside the Main nav entry as a state swap, so the
+    // Navigation 3 stack does not know about it. Intercept system back while it is open
+    // so back returns to the diary instead of popping the root screen (app exit).
+    BackHandler(enabled = showPlanView) {
+        showPlanView = false
+        returnToPlanAfterPlanAdd = false
     }
 
     Scaffold(
