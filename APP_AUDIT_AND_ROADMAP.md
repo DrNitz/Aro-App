@@ -52,9 +52,10 @@
 | **Persistence** | Room 2.8.5 with SQLite Write-Ahead Logging (WAL) | Schema version 6, 16 entities, 9 DAOs, 5 migrations |
 | **Camera & Vision** | CameraX 1.4.1 + Google ML Kit Barcode Scanning 17.3.0 | Real-time on-device UPC/EAN scanning |
 | **Image Loading** | Coil Compose 2.7.0 | Hardware-accelerated image pipeline with disk caching |
-| **Code Volume** | **30,163 lines of Kotlin** across 72 source files | Zero TODO, FIXME, or HACK debt markers in code |
-| **Unit Test Coverage** | **29 test suites, 294 unit tests, 0 failures, 0 errors** | 100% passing domain, calculation, and mapper suites |
-| **Static Analysis** | **0 errors, 40 warnings, 2 hints** | Verified via `./gradlew lintDebug` |
+| **Code Volume** | Over 32,500 lines of Kotlin across 77 source files | Zero TODO, FIXME, or HACK debt markers in code |
+| **Unit Test Coverage** | **35 test suites, 333 unit tests, 0 failures, 0 errors** | 100% passing domain, calculation, mapper, and ViewModel suites |
+| **Release Build** | R8 full-mode minification + resource shrinking enabled | Release APK 24 MB vs 46 MB debug; mapping archived per release |
+| **Static Analysis** | **0 errors, ~37 warnings, 0 vital issues** | Verified via `lintDebug`; `lintVitalRelease` clean under R8 |
 
 ---
 
@@ -661,16 +662,19 @@ Implement the promised offline backup/restore mechanism and add medication adher
 #### Objective
 Harden the app for Google Play or GitHub Releases with code shrinking, release signing, and frame-rate optimization.
 
-#### Work Packages & Step-by-Step Changes
+#### Status: Steps 4.1 and 4.2 COMPLETE (commits `16d7826`)
 
-1. **Step 4.1: R8 / ProGuard Minification & Resource Shrinking**
-   - Enable `isMinifyEnabled = true` and `isShrinkResources = true` in `app/build.gradle.kts`.
-   - Add keep rules for `kotlinx.serialization` models and Room entities.
+1. **Step 4.1: R8 / ProGuard Minification & Resource Shrinking — DONE**
+   - `isMinifyEnabled = true` and `isShrinkResources = true` enabled in `app/build.gradle.kts`.
+   - Keep rules verified live for `kotlinx.serialization` models, Room entities, and Nav3 keys.
+   - Release APK shrank from 46 MB (debug) to 24 MB; `lintVitalRelease` clean.
+   - Pending operational task: archive `mapping.txt` per release for de-obfuscation.
 
-2. **Step 4.2: LazyColumn Key Optimization**
-   - Add explicit `key = { it.id }` across all `LazyColumn` and `LazyRow` lists to eliminate unnecessary recompositions during scrolling and filtering.
+2. **Step 4.2: LazyColumn Key Optimization — DONE**
+   - Explicit keys added to all 18 previously unkeyed `LazyColumn`/`LazyRow` sites.
+   - Domain models (`item.id`), enum names, and strings used as saveable keys; in-place editable set rows intentionally keep index keys (documented in source).
 
-3. **Step 4.3: Release Signing & CI/CD Pipeline**
+3. **Step 4.3: Release Signing & CI/CD Pipeline — REMAINING**
    - Configure Gradle `signingConfigs` reading from environment variables (`KEYSTORE_FILE`, `KEY_ALIAS`, `KEY_PASSWORD`).
 
 ---
@@ -679,9 +683,9 @@ Harden the app for Google Play or GitHub Releases with code shrinking, release s
 
 ### Unit Tests
 Executed via `./gradlew testDebugUnitTest`:
-- **Suites Executed:** 30
-- **Total Tests:** 303
-- **Passed:** 303 (100%)
+- **Suites Executed:** 35
+- **Total Tests:** 333
+- **Passed:** 333 (100%)
 - **Failures / Errors / Skipped:** 0
 
 ### Android Lint
