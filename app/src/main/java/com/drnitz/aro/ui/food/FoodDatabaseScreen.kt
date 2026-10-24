@@ -71,6 +71,7 @@ import com.drnitz.aro.domain.model.CuratedFoodItem
 import com.drnitz.aro.domain.model.FoodLogEntry
 import com.drnitz.aro.domain.model.MealSlot
 import com.drnitz.aro.theme.AroTheme
+import com.drnitz.aro.ui.components.AroDialogSurface
 import com.drnitz.aro.ui.components.AroLoggingDateChip
 import com.drnitz.aro.ui.components.AroLoggingDateLabel
 import com.drnitz.aro.ui.components.BarcodeScannerView
@@ -689,15 +690,7 @@ private fun PortionPickerDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .imePadding()
-                .padding(horizontal = 20.dp),
-            shape = RoundedCornerShape(22.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 4.dp,
-        ) {
+        AroDialogSurface(floatingCard = true) {
             Column(
                 modifier = Modifier
                     .padding(18.dp)

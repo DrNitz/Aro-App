@@ -83,6 +83,7 @@ import com.drnitz.aro.domain.model.PlannedWater
 import com.drnitz.aro.notifications.NotificationPreferences
 import com.drnitz.aro.domain.model.MedicationReminder
 import com.drnitz.aro.theme.AroTheme
+import com.drnitz.aro.ui.components.AroDialogSurface
 import com.drnitz.aro.ui.components.ExerciseImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.map
@@ -106,14 +107,7 @@ private fun PlanPickerShell(
         onDismissRequest = onClose,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .imePadding()
-                .padding(top = 28.dp),
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-            color = MaterialTheme.colorScheme.surface,
-        ) {
+        AroDialogSurface {
             Column(
                 modifier = Modifier
                     .fillMaxSize()

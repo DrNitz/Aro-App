@@ -89,6 +89,7 @@ import com.drnitz.aro.notifications.NotificationHelper
 import com.drnitz.aro.notifications.NotificationPreferences
 import com.drnitz.aro.notifications.NotificationSettings
 import com.drnitz.aro.theme.AroTheme
+import com.drnitz.aro.ui.components.AroDialogSurface
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.util.Locale
@@ -140,14 +141,9 @@ fun NotificationSettingsDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.95f)
-                .fillMaxHeight(0.92f)
-                .imePadding(),
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp,
+        AroDialogSurface(
+            floatingCard = true,
+            modifier = Modifier.fillMaxHeight(0.92f),
         ) {
             Column(
                 modifier = Modifier

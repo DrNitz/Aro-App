@@ -91,6 +91,7 @@ import com.drnitz.aro.domain.model.SetEntry
 import com.drnitz.aro.domain.model.WorkoutLog
 import com.drnitz.aro.domain.model.WorkoutType
 import com.drnitz.aro.theme.AroTheme
+import com.drnitz.aro.ui.components.AroDialogSurface
 import com.drnitz.aro.ui.components.AroLoggingDateLabel
 import com.drnitz.aro.ui.components.ExerciseImage
 import com.drnitz.aro.ui.workout.GymRestTimerCard
@@ -398,14 +399,7 @@ internal fun LogWorkoutDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .imePadding()
-                .padding(top = 28.dp),
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-            color = MaterialTheme.colorScheme.surface,
-        ) {
+        AroDialogSurface {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
