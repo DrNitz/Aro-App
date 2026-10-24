@@ -1,5 +1,6 @@
 package com.drnitz.aro.ui.vitals
 
+import com.drnitz.aro.MainDispatcherRule
 import com.drnitz.aro.data.db.FixedDateProvider
 import com.drnitz.aro.data.repository.ActiveFast
 import com.drnitz.aro.data.repository.AroRepository
@@ -24,11 +25,15 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import java.time.Instant
 import java.time.LocalDate
 
 class VitalsViewModelTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     private val fixedToday = LocalDate.of(2026, 10, 21)
     private val dateProvider = FixedDateProvider(fixedToday)

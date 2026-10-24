@@ -1,5 +1,6 @@
 package com.drnitz.aro.ui.planner
 
+import com.drnitz.aro.MainDispatcherRule
 import com.drnitz.aro.data.db.FixedDateProvider
 import com.drnitz.aro.data.repository.ActiveFast
 import com.drnitz.aro.data.repository.AroRepository
@@ -33,11 +34,15 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import java.time.Instant
 import java.time.LocalDate
 
 class BodyPlannerViewModelTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     private val testToday = LocalDate.of(2026, 10, 21)
     private val dateProvider = FixedDateProvider(testToday)
