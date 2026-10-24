@@ -164,6 +164,9 @@ interface AroRepository {
 
     suspend fun deleteWorkout(id: String)
 
+    /** Retrieves the most recent workout for [exerciseName], with its logged sets. */
+    suspend fun getLastWorkoutForExercise(exerciseName: String): WorkoutLog? = null
+
     // ---- Weight -----------------------------------------------------------
 
     fun observeWeightHistory(): Flow<List<Pair<LocalDate, Double>>>

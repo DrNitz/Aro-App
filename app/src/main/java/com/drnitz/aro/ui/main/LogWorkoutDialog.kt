@@ -34,13 +34,16 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -89,6 +92,9 @@ import com.drnitz.aro.domain.model.WorkoutType
 import com.drnitz.aro.theme.AroTheme
 import com.drnitz.aro.ui.components.AroLoggingDateLabel
 import com.drnitz.aro.ui.components.ExerciseImage
+import com.drnitz.aro.ui.workout.GymRestTimerCard
+import com.drnitz.aro.ui.workout.PlateCalculatorDialog
+import com.drnitz.aro.ui.workout.rememberGymRestTimerState
 import kotlinx.coroutines.delay
 import java.time.Instant
 import java.util.Locale
@@ -162,9 +168,11 @@ internal fun LogWorkoutDialog(
     preselectedActivity: MetActivity? = null,
     initialWorkoutType: WorkoutType = WorkoutType.STRENGTH,
     initialDurationMinutes: Int? = null,
+    initialSets: List<SetEntry>? = null,
     targetDateLabel: String = "",
     targetDateIsToday: Boolean = true,
     cardioActionLabel: String = "Save Cardio Workout",
+    onLoadPreviousWorkout: (suspend (String) -> WorkoutLog?)? = null,
     onDismiss: () -> Unit,
     onWorkoutLogged: (WorkoutLog) -> Unit,
 ) {
@@ -179,7 +187,28 @@ internal fun LogWorkoutDialog(
     var selectedMuscle by remember { mutableStateOf("All") }
     var exerciseResults by remember { mutableStateOf<List<Exercise>>(emptyList()) }
     var selectedExercise by remember { mutableStateOf(preselectedExercise) }
-    val sets = remember { mutableStateListOf(SetEntry(weightKg = 60.0, reps = 10)) }
+    val sets = remember(initialSets) {
+        mutableStateListOf<SetEntry>().apply {
+            if (!initialSets.isNullOrEmpty()) {
+                addAll(initialSets)
+            } else {
+                add(SetEntry(weightKg = 60.0, reps = 10))
+            }
+        }
+    }
+    val restTimer = rememberGymRestTimerState(initialSeconds = 90)
+    var plateCalculatorTargetWeight by remember { mutableStateOf<Double?>(null) }
+    var plateCalculatorSetIndex by remember { mutableStateOf<Int?>(null) }
+    var previousWorkout by remember { mutableStateOf<WorkoutLog?>(null) }
+
+    LaunchedEffect(selectedExercise?.name) {
+        val exName = selectedExercise?.name
+        if (exName != null && onLoadPreviousWorkout != null) {
+            previousWorkout = onLoadPreviousWorkout(exName)
+        } else {
+            previousWorkout = null
+        }
+    }
 
     // Cardio State
     var cardioQuery by remember { mutableStateOf("") }
@@ -523,6 +552,64 @@ internal fun LogWorkoutDialog(
                                 }
                             }
 
+                            // Last Performance Record (Previous Session)
+                            previousWorkout?.let { prev ->
+                                if (prev.sets.isNotEmpty()) {
+                                    Card(
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f),
+                                        ),
+                                        modifier = Modifier.fillMaxWidth(),
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = "PREVIOUS SESSION",
+                                                    style = MaterialTheme.typography.labelSmall.copy(
+                                                        fontWeight = FontWeight.Bold,
+                                                        letterSpacing = 0.8.sp,
+                                                    ),
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                )
+                                                val prevSummary = prev.sets.joinToString("  •  ") {
+                                                    "${it.weightKg.roundToInt()}kg × ${it.reps}"
+                                                }
+                                                Text(
+                                                    text = prevSummary,
+                                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                )
+                                            }
+
+                                            OutlinedButton(
+                                                onClick = {
+                                                    sets.clear()
+                                                    sets.addAll(prev.sets.map { it.copy(isCompleted = false) })
+                                                },
+                                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                                shape = RoundedCornerShape(8.dp),
+                                                modifier = Modifier.height(30.dp),
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.ContentCopy,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(12.dp),
+                                                )
+                                                Spacer(Modifier.width(4.dp))
+                                                Text("Use Sets", style = MaterialTheme.typography.labelSmall)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
                             // Clinical Metrics Strip
                             Card(
                                 shape = RoundedCornerShape(14.dp),
@@ -598,6 +685,12 @@ internal fun LogWorkoutDialog(
                                 }
                             }
 
+                            // Interactive Rest Timer Card
+                            GymRestTimerCard(
+                                timerState = restTimer,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+
                             // Sets Table Header
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
@@ -609,17 +702,33 @@ internal fun LogWorkoutDialog(
                                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
-                                OutlinedButton(
-                                    onClick = {
-                                        val lastSet = sets.lastOrNull()
-                                        sets.add(SetEntry(weightKg = lastSet?.weightKg ?: 60.0, reps = lastSet?.reps ?: 10))
-                                    },
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                    shape = RoundedCornerShape(8.dp),
-                                ) {
-                                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
-                                    Spacer(Modifier.width(4.dp))
-                                    Text("Add Set", style = MaterialTheme.typography.labelSmall)
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            val lastSet = sets.lastOrNull()
+                                            val cloned = lastSet?.duplicate() ?: SetEntry(weightKg = 60.0, reps = 10)
+                                            sets.add(cloned)
+                                        },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                        shape = RoundedCornerShape(8.dp),
+                                    ) {
+                                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(13.dp))
+                                        Spacer(Modifier.width(4.dp))
+                                        Text("Duplicate", style = MaterialTheme.typography.labelSmall)
+                                    }
+
+                                    OutlinedButton(
+                                        onClick = {
+                                            val lastSet = sets.lastOrNull()
+                                            sets.add(SetEntry(weightKg = lastSet?.weightKg ?: 60.0, reps = lastSet?.reps ?: 10))
+                                        },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                        shape = RoundedCornerShape(8.dp),
+                                    ) {
+                                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
+                                        Spacer(Modifier.width(4.dp))
+                                        Text("Add Set", style = MaterialTheme.typography.labelSmall)
+                                    }
                                 }
                             }
 
@@ -633,78 +742,211 @@ internal fun LogWorkoutDialog(
                                 items(sets.size) { index ->
                                     val currentSet = sets[index]
                                     Card(
-                                        shape = RoundedCornerShape(10.dp),
+                                        shape = RoundedCornerShape(12.dp),
                                         colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                            containerColor = if (currentSet.isCompleted) {
+                                                MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f)
+                                            } else {
+                                                MaterialTheme.colorScheme.surfaceContainer
+                                            },
                                         ),
                                         modifier = Modifier.fillMaxWidth(),
                                     ) {
-                                        Row(
+                                        Column(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                                            verticalArrangement = Arrangement.spacedBy(6.dp),
                                         ) {
-                                            Text(
-                                                text = "#${index + 1}",
-                                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                                color = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.width(28.dp),
-                                            )
-
-                                            OutlinedTextField(
-                                                value = if (currentSet.weightKg == 0.0) "" else currentSet.weightKg.roundToInt().toString(),
-                                                onValueChange = { str ->
-                                                    val clean = str.filter { it.isDigit() }
-                                                    val w = clean.toDoubleOrNull() ?: 0.0
-                                                    sets[index] = currentSet.copy(weightKg = w)
-                                                },
-                                                label = { Text("kg") },
-                                                singleLine = true,
-                                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                                modifier = Modifier.weight(1f),
-                                                shape = RoundedCornerShape(8.dp),
-                                            )
-
-                                            OutlinedTextField(
-                                                value = if (currentSet.reps == 0) "" else currentSet.reps.toString(),
-                                                onValueChange = { str ->
-                                                    val clean = str.filter { it.isDigit() }
-                                                    val r = clean.toIntOrNull() ?: 0
-                                                    sets[index] = currentSet.copy(reps = r)
-                                                },
-                                                label = { Text("reps") },
-                                                singleLine = true,
-                                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                                modifier = Modifier.weight(1f),
-                                                shape = RoundedCornerShape(8.dp),
-                                            )
-
-                                            Column(horizontalAlignment = Alignment.End, modifier = Modifier.width(64.dp)) {
-                                                Text(
-                                                    text = "${currentSet.volumeKg.roundToInt()} kg",
-                                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                                                    color = MaterialTheme.colorScheme.onSurface,
-                                                )
-                                                val set1Rm = OneRepMaxCalculator.estimate(currentSet.weightKg, currentSet.reps)
-                                                Text(
-                                                    text = if (set1Rm != null) "1RM: ${set1Rm.oneRepMaxKg.roundToInt()}kg" else "—",
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                )
-                                            }
-
-                                            if (sets.size > 1) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                            ) {
+                                                // Checkmark completion toggle
                                                 IconButton(
-                                                    onClick = { sets.removeAt(index) },
+                                                    onClick = {
+                                                        val next = !currentSet.isCompleted
+                                                        sets[index] = currentSet.copy(isCompleted = next)
+                                                        if (next) {
+                                                            restTimer.notifySetCompleted(index)
+                                                        }
+                                                    },
                                                     modifier = Modifier.size(28.dp),
                                                 ) {
                                                     Icon(
-                                                        imageVector = Icons.Default.Close,
-                                                        contentDescription = "Remove set",
-                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        imageVector = if (currentSet.isCompleted) Icons.Default.CheckCircle else Icons.Outlined.CheckCircle,
+                                                        contentDescription = if (currentSet.isCompleted) "Set completed" else "Mark set complete",
+                                                        tint = if (currentSet.isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                                        modifier = Modifier.size(20.dp),
+                                                    )
+                                                }
+
+                                                Text(
+                                                    text = "#${index + 1}",
+                                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                                    color = if (currentSet.isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                                    modifier = Modifier.width(24.dp),
+                                                )
+
+                                                OutlinedTextField(
+                                                    value = if (currentSet.weightKg == 0.0) "" else currentSet.weightKg.roundToInt().toString(),
+                                                    onValueChange = { str ->
+                                                        val clean = str.filter { it.isDigit() }
+                                                        val w = clean.toDoubleOrNull() ?: 0.0
+                                                        sets[index] = currentSet.copy(weightKg = w)
+                                                    },
+                                                    label = { Text("kg") },
+                                                    trailingIcon = {
+                                                        IconButton(
+                                                            onClick = {
+                                                                plateCalculatorTargetWeight = currentSet.weightKg
+                                                                plateCalculatorSetIndex = index
+                                                            },
+                                                            modifier = Modifier.size(24.dp),
+                                                        ) {
+                                                            Icon(
+                                                                imageVector = Icons.Default.FitnessCenter,
+                                                                contentDescription = "Barbell plate calculator",
+                                                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                                                                modifier = Modifier.size(14.dp),
+                                                            )
+                                                        }
+                                                    },
+                                                    singleLine = true,
+                                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                                    modifier = Modifier.weight(1.15f),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                )
+
+                                                OutlinedTextField(
+                                                    value = if (currentSet.reps == 0) "" else currentSet.reps.toString(),
+                                                    onValueChange = { str ->
+                                                        val clean = str.filter { it.isDigit() }
+                                                        val r = clean.toIntOrNull() ?: 0
+                                                        sets[index] = currentSet.copy(reps = r)
+                                                    },
+                                                    label = { Text("reps") },
+                                                    singleLine = true,
+                                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                                    modifier = Modifier.weight(1f),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                )
+
+                                                Column(horizontalAlignment = Alignment.End, modifier = Modifier.width(56.dp)) {
+                                                    Text(
+                                                        text = "${currentSet.volumeKg.roundToInt()}kg",
+                                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                                                        color = MaterialTheme.colorScheme.onSurface,
+                                                    )
+                                                    val set1Rm = OneRepMaxCalculator.estimate(currentSet.weightKg, currentSet.reps)
+                                                    Text(
+                                                        text = if (set1Rm != null) "1RM: ${set1Rm.oneRepMaxKg.roundToInt()}k" else "—",
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    )
+                                                }
+
+                                                // Set Duplicator Button
+                                                IconButton(
+                                                    onClick = {
+                                                        val clone = currentSet.duplicate()
+                                                        sets.add(index + 1, clone)
+                                                    },
+                                                    modifier = Modifier.size(28.dp),
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.ContentCopy,
+                                                        contentDescription = "Duplicate set #${index + 1}",
+                                                        tint = MaterialTheme.colorScheme.primary,
                                                         modifier = Modifier.size(16.dp),
+                                                    )
+                                                }
+
+                                                if (sets.size > 1) {
+                                                    IconButton(
+                                                        onClick = { sets.removeAt(index) },
+                                                        modifier = Modifier.size(28.dp),
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Close,
+                                                            contentDescription = "Remove set",
+                                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                            modifier = Modifier.size(16.dp),
+                                                        )
+                                                    }
+                                                }
+                                            }
+
+                                            // Stepper Quick-Adjust Row for load and reps
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(start = 56.dp, end = 4.dp),
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                            ) {
+                                                Surface(
+                                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                                    shape = RoundedCornerShape(6.dp),
+                                                    modifier = Modifier.clickable {
+                                                        val newWeight = (currentSet.weightKg - 2.5).coerceAtLeast(0.0)
+                                                        sets[index] = currentSet.copy(weightKg = newWeight)
+                                                    },
+                                                ) {
+                                                    Text(
+                                                        text = "-2.5kg",
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                                    )
+                                                }
+
+                                                Surface(
+                                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                                    shape = RoundedCornerShape(6.dp),
+                                                    modifier = Modifier.clickable {
+                                                        val newWeight = currentSet.weightKg + 2.5
+                                                        sets[index] = currentSet.copy(weightKg = newWeight)
+                                                    },
+                                                ) {
+                                                    Text(
+                                                        text = "+2.5kg",
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                                    )
+                                                }
+
+                                                Surface(
+                                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                                    shape = RoundedCornerShape(6.dp),
+                                                    modifier = Modifier.clickable {
+                                                        val newReps = (currentSet.reps - 1).coerceAtLeast(0)
+                                                        sets[index] = currentSet.copy(reps = newReps)
+                                                    },
+                                                ) {
+                                                    Text(
+                                                        text = "-1 rep",
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                                    )
+                                                }
+
+                                                Surface(
+                                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                                    shape = RoundedCornerShape(6.dp),
+                                                    modifier = Modifier.clickable {
+                                                        val newReps = currentSet.reps + 1
+                                                        sets[index] = currentSet.copy(reps = newReps)
+                                                    },
+                                                ) {
+                                                    Text(
+                                                        text = "+1 rep",
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                                     )
                                                 }
                                             }
@@ -1331,6 +1573,25 @@ internal fun LogWorkoutDialog(
                     }
                 }
             }
+        }
+
+        plateCalculatorTargetWeight?.let { weight ->
+            PlateCalculatorDialog(
+                initialWeightKg = weight,
+                onDismiss = {
+                    plateCalculatorTargetWeight = null
+                    plateCalculatorSetIndex = null
+                },
+                onApplyWeight = { newWeight ->
+                    plateCalculatorSetIndex?.let { idx ->
+                        if (idx in sets.indices) {
+                            sets[idx] = sets[idx].copy(weightKg = newWeight)
+                        }
+                    }
+                    plateCalculatorTargetWeight = null
+                    plateCalculatorSetIndex = null
+                },
+            )
         }
     }
 }

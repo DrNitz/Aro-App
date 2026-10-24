@@ -178,4 +178,60 @@ class StrengthTest {
     fun `tonnage coefficient matches the documented constant`() {
         assertEquals(0.065, KCAL_PER_KG_TONNAGE, 0.0001)
     }
+
+    // ---- Set duplicator tests ---------------------------------------------
+
+    @Test
+    fun `duplicate clone preserves load and reps and unsets completion`() {
+        val original = SetEntry(weightKg = 80.0, reps = 8, isCompleted = true)
+        val clone = original.duplicate()
+        assertEquals(80.0, clone.weightKg, 0.001)
+        assertEquals(8, clone.reps)
+        assertFalse("Duplicated sets must start as not completed", clone.isCompleted)
+    }
+
+    @Test
+    fun `duplicate clone supports weight and rep deltas for progressive overload`() {
+        val original = SetEntry(weightKg = 80.0, reps = 8)
+        val progressive = original.duplicate(weightDeltaKg = 2.5, repsDelta = -1)
+        assertEquals(82.5, progressive.weightKg, 0.001)
+        assertEquals(7, progressive.reps)
+    }
+
+    @Test
+    fun `duplicateSetAt inserts clone immediately after target set`() {
+        val sets = listOf(
+            SetEntry(weightKg = 60.0, reps = 12),
+            SetEntry(weightKg = 80.0, reps = 8),
+            SetEntry(weightKg = 100.0, reps = 4),
+        )
+        val updated = sets.duplicateSetAt(index = 1, weightDeltaKg = 5.0)
+        assertEquals(4, updated.size)
+        assertEquals(60.0, updated[0].weightKg, 0.001)
+        assertEquals(80.0, updated[1].weightKg, 0.001)
+        assertEquals(85.0, updated[2].weightKg, 0.001) // Cloned set right after index 1
+        assertEquals(8, updated[2].reps)
+        assertEquals(100.0, updated[3].weightKg, 0.001)
+    }
+
+    @Test
+    fun `duplicateLastSet appends copy to end of list`() {
+        val sets = listOf(
+            SetEntry(weightKg = 70.0, reps = 10),
+            SetEntry(weightKg = 75.0, reps = 8),
+        )
+        val updated = sets.duplicateLastSet(weightDeltaKg = 2.5)
+        assertEquals(3, updated.size)
+        assertEquals(77.5, updated[2].weightKg, 0.001)
+        assertEquals(8, updated[2].reps)
+    }
+
+    @Test
+    fun `duplicateLastSet on empty list supplies default working set`() {
+        val empty = emptyList<SetEntry>()
+        val result = empty.duplicateLastSet()
+        assertEquals(1, result.size)
+        assertEquals(60.0, result[0].weightKg, 0.001)
+        assertEquals(10, result[0].reps)
+    }
 }

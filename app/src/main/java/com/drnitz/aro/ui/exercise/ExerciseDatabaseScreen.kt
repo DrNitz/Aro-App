@@ -152,6 +152,7 @@ fun ExerciseDatabaseScreen(
     onToday: () -> Unit,
     onWorkoutLogged: (WorkoutLog) -> Unit,
     onExercisePlanned: (Exercise) -> Unit = {},
+    onLoadPreviousWorkout: (suspend (String) -> WorkoutLog?)? = null,
     modifier: Modifier = Modifier,
 ) {
     var allExercises by remember { mutableStateOf<List<Exercise>>(emptyList()) }
@@ -517,6 +518,7 @@ fun ExerciseDatabaseScreen(
             targetDateLabel = formattedDate,
             targetDateIsToday = isToday,
             cardioActionLabel = if (isPlanning) "Plan Cardio Workout" else "Save Cardio Workout",
+            onLoadPreviousWorkout = onLoadPreviousWorkout,
             onDismiss = { loggingExercise = null },
             onWorkoutLogged = { workout ->
                 onWorkoutLogged(workout)

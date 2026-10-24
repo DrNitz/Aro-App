@@ -88,6 +88,7 @@ import com.drnitz.aro.data.library.OfflineFoodLibrary
 import com.drnitz.aro.data.network.OpenFoodFactsClient
 import com.drnitz.aro.data.repository.RoomAroRepository
 import com.drnitz.aro.domain.calculation.EnergyPlan
+import com.drnitz.aro.domain.calculation.MetCatalog
 import com.drnitz.aro.domain.clinical.MissingMacroAuditor
 import com.drnitz.aro.domain.model.CuratedFoodItem
 import com.drnitz.aro.domain.model.DiaryDay
@@ -110,6 +111,7 @@ import com.drnitz.aro.ui.food.FoodDatabaseScreen
 import com.drnitz.aro.ui.goals.GoalsBodyScreen
 import com.drnitz.aro.ui.notifications.NotificationSettingsDialog
 import com.drnitz.aro.ui.plan.AroMonthCalendar
+import com.drnitz.aro.ui.plan.AroWeekStrip
 import com.drnitz.aro.ui.plan.PlanDayShortcut
 import com.drnitz.aro.ui.plan.PlanExercisePickerDialog
 import com.drnitz.aro.ui.plan.PlanTabScreen
@@ -248,6 +250,7 @@ fun MainScreen(
                 onCompletePlanOccurrence = vm::completePlanOccurrence,
                 onSkipPlanOccurrence = vm::skipPlanOccurrence,
                 onUncompletePlanOccurrence = vm::uncompletePlanOccurrence,
+                onLoadPreviousWorkout = vm::getLastWorkoutForExercise,
                 onItemClick = onItemClick,
                 modifier = modifier,
             )
@@ -290,6 +293,7 @@ internal fun MainScreenContent(
     onCompletePlanOccurrence: (String, LocalDate, String?) -> Unit = { _, _, _ -> },
     onSkipPlanOccurrence: (String, LocalDate) -> Unit = { _, _ -> },
     onUncompletePlanOccurrence: (String, LocalDate) -> Unit = { _, _ -> },
+    onLoadPreviousWorkout: (suspend (String) -> WorkoutLog?)? = null,
     onItemClick: (NavKey) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -418,6 +422,7 @@ internal fun MainScreenContent(
                             onSavePlanItem = onSavePlanItem,
                             onOpenPlan = { showPlanView = true },
                             onOpenNotifications = { showNotificationSettingsDialog = true },
+                            onLoadPreviousWorkout = onLoadPreviousWorkout,
                             onItemClick = onItemClick,
                         )
                     }
@@ -490,6 +495,7 @@ internal fun MainScreenContent(
                                     showPlanView = true
                                 }
                             },
+                            onLoadPreviousWorkout = onLoadPreviousWorkout,
                         )
                     } else {
                         MissingLibrary("The exercise library is still loading.")
@@ -547,6 +553,7 @@ private fun DiaryTabContent(
     onSavePlanItem: (PlanItem) -> Unit = {},
     onOpenPlan: () -> Unit = {},
     onOpenNotifications: () -> Unit = {},
+    onLoadPreviousWorkout: (suspend (String) -> WorkoutLog?)? = null,
     onItemClick: (NavKey) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -555,6 +562,30 @@ private fun DiaryTabContent(
     var showFastingProtocolDialog by remember { mutableStateOf(false) }
     var showCustomHydrationDialog by remember { mutableStateOf(false) }
     var showLogWorkoutDialog by remember { mutableStateOf(false) }
+    var duplicatingWorkout by remember { mutableStateOf<WorkoutLog?>(null) }
+    var duplicatingExercise by remember { mutableStateOf<Exercise?>(null) }
+
+    LaunchedEffect(duplicatingWorkout?.id, duplicatingWorkout?.exerciseName) {
+        val workout = duplicatingWorkout
+        if (workout != null && exerciseLibrary != null && workout.isStrength) {
+            val matches = exerciseLibrary.search(workout.exerciseName)
+            duplicatingExercise = matches.firstOrNull { it.name.equals(workout.exerciseName, ignoreCase = true) }
+                ?: matches.firstOrNull()
+                ?: Exercise(
+                    id = "workout-${workout.exerciseName.lowercase().replace(" ", "-")}",
+                    name = workout.exerciseName,
+                    category = workout.category.ifBlank { "strength" },
+                    primaryMuscles = listOfNotNull(workout.muscle).ifEmpty { listOf("chest") },
+                    secondaryMuscles = emptyList(),
+                    equipment = workout.equipment ?: "barbell",
+                    level = "intermediate",
+                    instructions = emptyList(),
+                    images = emptyList(),
+                )
+        } else {
+            duplicatingExercise = null
+        }
+    }
     var showPlanExercisePicker by remember { mutableStateOf(false) }
 
     val planning = state.selectedDate.isAfter(state.today)
@@ -627,6 +658,7 @@ private fun DiaryTabContent(
                             if (planning) showPlanExercisePicker = true else showLogWorkoutDialog = true
                         },
                         onDeleteWorkout = onDeleteWorkout,
+                        onDuplicateWorkout = { duplicatingWorkout = it },
                         onItemClick = onItemClick,
                     )
                 }
@@ -639,13 +671,13 @@ private fun DiaryTabContent(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                AroMonthCalendar(
-                    month = calendarMonth,
+                AroWeekStrip(
                     selectedDate = state.selectedDate,
                     today = state.today,
+                    calendarMonth = calendarMonth,
                     plannedDates = planSuccess?.plannedDates ?: emptyMap(),
+                    onSelectDate = onCalendarDate,
                     onMonthChange = onPlanMonthChange,
-                    onDateClick = onCalendarDate,
                 )
 
                 planShortcut()
@@ -668,6 +700,7 @@ private fun DiaryTabContent(
                         if (planning) showPlanExercisePicker = true else showLogWorkoutDialog = true
                     },
                     onDeleteWorkout = onDeleteWorkout,
+                    onDuplicateWorkout = { duplicatingWorkout = it },
                     onItemClick = onItemClick,
                 )
             }
@@ -744,12 +777,44 @@ private fun DiaryTabContent(
                 userHeightCm = state.profile.heightCm,
                 targetDateLabel = state.formattedDate,
                 targetDateIsToday = state.isToday,
+                onLoadPreviousWorkout = onLoadPreviousWorkout,
                 onDismiss = { showLogWorkoutDialog = false },
                 onWorkoutLogged = { workout ->
                     onLogWorkout(workout)
                     showLogWorkoutDialog = false
                 },
             )
+        }
+    }
+
+    duplicatingWorkout?.let { workout ->
+        if (exerciseLibrary != null) {
+            val exercise = if (workout.isStrength) duplicatingExercise else null
+            val activity = if (workout.isCardio) {
+                MetCatalog.all.firstOrNull { it.name.equals(workout.exerciseName, ignoreCase = true) }
+            } else {
+                null
+            }
+
+            if (!workout.isStrength || exercise != null) {
+                LogWorkoutDialog(
+                    exerciseLibrary = exerciseLibrary,
+                    userWeightKg = state.profile.weightKg,
+                    userHeightCm = state.profile.heightCm,
+                    preselectedExercise = exercise,
+                    preselectedActivity = activity,
+                    initialWorkoutType = workout.type,
+                    initialDurationMinutes = workout.durationMinutes,
+                    initialSets = workout.sets.map { it.copy(isCompleted = false) },
+                    targetDateLabel = state.formattedDate,
+                    targetDateIsToday = state.isToday,
+                    onDismiss = { duplicatingWorkout = null },
+                    onWorkoutLogged = { newWorkout ->
+                        onLogWorkout(newWorkout)
+                        duplicatingWorkout = null
+                    },
+                )
+            }
         }
     }
 

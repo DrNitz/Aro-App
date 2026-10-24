@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -30,7 +31,8 @@ import com.drnitz.aro.theme.AroTheme
 
 /**
  * Concentric Radial Rings for Calories, Protein, Carbs, and Fat.
- * Hardware-accelerated canvas with smooth entrance animations.
+ * Hardware-accelerated canvas with smooth entrance animations, aligned sweep gradients,
+ * and target-overflow celebration indicators.
  */
 @Composable
 fun ConcentricMacroRings(
@@ -45,10 +47,12 @@ fun ConcentricMacroRings(
     targetFatG: Double,
     modifier: Modifier = Modifier,
     size: Dp = 230.dp,
-    strokeWidth: Dp = 12.dp
+    strokeWidth: Dp = 12.dp,
 ) {
     val netCalories = caloriesEaten - caloriesBurned
     val remainingCalories = (targetCalories - netCalories).coerceAtLeast(0)
+    val isOverCalories = netCalories > targetCalories && targetCalories > 0
+    val overCalories = if (isOverCalories) netCalories - targetCalories else 0
 
     val targetCalSafe = if (targetCalories > 0) targetCalories else 2000
     val targetProtSafe = if (targetProteinG > 0) targetProteinG else 150.0
@@ -60,25 +64,33 @@ fun ConcentricMacroRings(
     val rawCarbSweep = (((carbsEatenG / targetCarbSafe) * 360f).toFloat()).coerceIn(0f, 360f)
     val rawFatSweep = (((fatEatenG / targetFatSafe) * 360f).toFloat()).coerceIn(0f, 360f)
 
+    // Overfill angles for exceeding targets (bonus progress)
+    val rawProtOver = ((((proteinEatenG / targetProtSafe) - 1.0f) * 360f).toFloat()).coerceIn(0f, 360f)
+    val rawCalOver = ((((netCalories.toFloat() / targetCalSafe.toFloat()) - 1.0f) * 360f)).coerceIn(0f, 360f)
+
     // Animated sweeps for smooth visual feedback
     val animCalSweep = remember { Animatable(0f) }
     val animProtSweep = remember { Animatable(0f) }
     val animCarbSweep = remember { Animatable(0f) }
     val animFatSweep = remember { Animatable(0f) }
+    val animProtOver = remember { Animatable(0f) }
+    val animCalOver = remember { Animatable(0f) }
 
-    LaunchedEffect(rawCalSweep, rawProtSweep, rawCarbSweep, rawFatSweep) {
+    LaunchedEffect(rawCalSweep, rawProtSweep, rawCarbSweep, rawFatSweep, rawProtOver, rawCalOver) {
         val animSpec = tween<Float>(durationMillis = 900, easing = FastOutSlowInEasing)
         animCalSweep.animateTo(rawCalSweep, animSpec)
         animProtSweep.animateTo(rawProtSweep, animSpec)
         animCarbSweep.animateTo(rawCarbSweep, animSpec)
         animFatSweep.animateTo(rawFatSweep, animSpec)
+        animProtOver.animateTo(rawProtOver, animSpec)
+        animCalOver.animateTo(rawCalOver, animSpec)
     }
 
     val macroColors = AroTheme.macroColors
 
     Box(
         modifier = modifier.size(size),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Canvas(modifier = Modifier.size(size)) {
             val strokePx = strokeWidth.toPx()
@@ -94,10 +106,10 @@ fun ConcentricMacroRings(
             val rFat = baseRadius - (ringGap * 3)
 
             val rings = listOf(
-                RingData(rCal, animCalSweep.value, macroColors.calories, macroColors.caloriesBg),
-                RingData(rProt, animProtSweep.value, macroColors.protein, macroColors.proteinBg),
-                RingData(rCarb, animCarbSweep.value, macroColors.carbs, macroColors.carbsBg),
-                RingData(rFat, animFatSweep.value, macroColors.fat, macroColors.fatBg)
+                RingData(rCal, animCalSweep.value, animCalOver.value, macroColors.calories, macroColors.caloriesBg),
+                RingData(rProt, animProtSweep.value, animProtOver.value, macroColors.protein, macroColors.proteinBg),
+                RingData(rCarb, animCarbSweep.value, 0f, macroColors.carbs, macroColors.carbsBg),
+                RingData(rFat, animFatSweep.value, 0f, macroColors.fat, macroColors.fatBg),
             )
 
             rings.forEach { ring ->
@@ -106,45 +118,64 @@ fun ConcentricMacroRings(
                     color = ring.trackColor,
                     radius = ring.radius,
                     center = center,
-                    style = Stroke(width = strokePx)
+                    style = Stroke(width = strokePx),
                 )
 
-                // Active Progress Arc
+                // Active Progress Arc with coordinated sweep gradient rotated to 12 o'clock (-90°)
                 if (ring.sweepAngle > 0f) {
-                    drawArc(
-                        brush = Brush.sweepGradient(
-                            listOf(ring.activeColor, ring.activeColor.copy(alpha = 0.85f)),
-                            center = center
-                        ),
-                        startAngle = -90f,
-                        sweepAngle = ring.sweepAngle,
-                        useCenter = false,
-                        topLeft = Offset(center.x - ring.radius, center.y - ring.radius),
-                        size = Size(ring.radius * 2, ring.radius * 2),
-                        style = Stroke(width = strokePx, cap = StrokeCap.Round)
-                    )
+                    rotate(degrees = -90f, pivot = center) {
+                        drawArc(
+                            brush = Brush.sweepGradient(
+                                listOf(ring.activeColor, ring.activeColor.copy(alpha = 0.85f)),
+                                center = center,
+                            ),
+                            startAngle = 0f,
+                            sweepAngle = ring.sweepAngle,
+                            useCenter = false,
+                            topLeft = Offset(center.x - ring.radius, center.y - ring.radius),
+                            size = Size(ring.radius * 2, ring.radius * 2),
+                            style = Stroke(width = strokePx, cap = StrokeCap.Round),
+                        )
+
+                        // Target Overfill Indicator (bonus glow highlight arc)
+                        if (ring.overAngle > 0f) {
+                            drawArc(
+                                color = Color.White.copy(alpha = 0.8f),
+                                startAngle = 0f,
+                                sweepAngle = ring.overAngle,
+                                useCenter = false,
+                                topLeft = Offset(center.x - ring.radius, center.y - ring.radius),
+                                size = Size(ring.radius * 2, ring.radius * 2),
+                                style = Stroke(width = strokePx * 0.4f, cap = StrokeCap.Round),
+                            )
+                        }
+                    }
                 }
             }
         }
 
         // Center Metric Callout
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            val mainNumber = if (isOverCalories) "+$overCalories" else "$remainingCalories"
+            val labelText = if (isOverCalories) "kcal over" else "kcal left"
+            val numberColor = if (isOverCalories) macroColors.calories else MaterialTheme.colorScheme.onSurface
+
             Text(
-                text = "$remainingCalories",
+                text = mainNumber,
                 style = MaterialTheme.typography.displaySmall.copy(
                     fontWeight = FontWeight.Bold,
-                    fontSize = 26.sp
+                    fontSize = 26.sp,
                 ),
-                color = MaterialTheme.colorScheme.onSurface
+                color = numberColor,
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = "kcal left",
+                text = labelText,
                 style = MaterialTheme.typography.labelSmall.copy(
                     fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 0.5.sp
+                    letterSpacing = 0.5.sp,
                 ),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -153,6 +184,7 @@ fun ConcentricMacroRings(
 private data class RingData(
     val radius: Float,
     val sweepAngle: Float,
+    val overAngle: Float,
     val activeColor: Color,
-    val trackColor: Color
+    val trackColor: Color,
 )

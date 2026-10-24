@@ -467,6 +467,9 @@ class RoomAroRepository(
         workoutDao.deleteWorkout(id)
     }
 
+    override suspend fun getLastWorkoutForExercise(exerciseName: String): WorkoutLog? =
+        workoutDao.findLastWorkoutForExercise(exerciseName)?.toDomain()
+
     // ---- Weight -----------------------------------------------------------
 
     override fun observeWeightHistory(): Flow<List<Pair<LocalDate, Double>>> =

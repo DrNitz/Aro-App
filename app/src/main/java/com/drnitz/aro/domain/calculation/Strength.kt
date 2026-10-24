@@ -134,3 +134,37 @@ const val KCAL_PER_KG_TONNAGE = 0.065
 /** Calorie estimate for a logged strength session. */
 fun WorkoutLog.estimatedCaloriesBurned(): Int =
     if (isStrength) (totalVolumeKg * KCAL_PER_KG_TONNAGE).roundToInt() else 0
+
+/**
+ * Duplicates a set at [index], inserting the clone immediately after.
+ *
+ * @param index 0-based index of the set to duplicate.
+ * @param weightDeltaKg Load adjustment for progressive overload (e.g. +2.5kg).
+ * @param repsDelta Repetition count adjustment.
+ * @return A new list containing the duplicated set.
+ */
+fun List<SetEntry>.duplicateSetAt(
+    index: Int,
+    weightDeltaKg: Double = 0.0,
+    repsDelta: Int = 0,
+): List<SetEntry> {
+    if (index !in indices) return this
+    val target = this[index]
+    val clone = target.duplicate(weightDeltaKg, repsDelta)
+    val result = toMutableList()
+    result.add(index + 1, clone)
+    return result
+}
+
+/**
+ * Duplicates the last working set in the list, appending it to the end.
+ * If the list is empty, returns a default working set (60kg x 10).
+ */
+fun List<SetEntry>.duplicateLastSet(
+    weightDeltaKg: Double = 0.0,
+    repsDelta: Int = 0,
+): List<SetEntry> {
+    if (isEmpty()) return listOf(SetEntry(weightKg = 60.0, reps = 10))
+    val last = last()
+    return this + last.duplicate(weightDeltaKg, repsDelta)
+}

@@ -22,3 +22,13 @@ fun monthGridDates(
 /** The seven weekday headers in display order. */
 fun weekDaysInOrder(weekStart: DayOfWeek): List<DayOfWeek> =
     (0 until 7).map { weekStart.plus(it.toLong()) }
+
+/** The seven consecutive dates of the week containing [date], starting on [weekStart]. */
+fun weekDatesFor(
+    date: LocalDate,
+    weekStart: DayOfWeek,
+): List<LocalDate> {
+    val offset = (date.dayOfWeek.value - weekStart.value + 7) % 7
+    val start = date.minusDays(offset.toLong())
+    return (0 until 7).map { start.plusDays(it.toLong()) }
+}

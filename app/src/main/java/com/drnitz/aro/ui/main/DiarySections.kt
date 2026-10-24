@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.HealthAndSafety
@@ -75,6 +76,7 @@ internal fun DiarySections(
     onDeleteFood: (String) -> Unit,
     onOpenLogWorkout: () -> Unit,
     onDeleteWorkout: (String) -> Unit,
+    onDuplicateWorkout: (WorkoutLog) -> Unit = {},
     onItemClick: (NavKey) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -229,6 +231,7 @@ internal fun DiarySections(
             WorkoutsCard(
                 workouts = state.diaryDay.workouts,
                 onDeleteWorkout = onDeleteWorkout,
+                onDuplicateWorkout = onDuplicateWorkout,
             )
         } else {
             Card(
@@ -330,24 +333,28 @@ internal fun MacroRingsCard(
                     amount = "${dayTotals.proteinG.roundToInt()}g",
                     target = "${energyPlan.macros.proteinG}g",
                     color = AroTheme.macroColors.protein,
+                    fraction = (dayTotals.proteinG / energyPlan.macros.proteinG.coerceAtLeast(1)).toFloat(),
                 )
                 MacroBadge(
                     label = "Carbs",
                     amount = "${dayTotals.carbsG.roundToInt()}g",
                     target = "${energyPlan.macros.carbsG}g",
                     color = AroTheme.macroColors.carbs,
+                    fraction = (dayTotals.carbsG / energyPlan.macros.carbsG.coerceAtLeast(1)).toFloat(),
                 )
                 MacroBadge(
                     label = "Fat",
                     amount = "${dayTotals.fatG.roundToInt()}g",
                     target = "${energyPlan.macros.fatG}g",
                     color = AroTheme.macroColors.fat,
+                    fraction = (dayTotals.fatG / energyPlan.macros.fatG.coerceAtLeast(1)).toFloat(),
                 )
                 MacroBadge(
                     label = "Fiber",
                     amount = "${dayTotals.fiberG.roundToInt()}g",
                     target = "${energyPlan.macros.fiberG}g",
                     color = AroTheme.macroColors.fiber,
+                    fraction = (dayTotals.fiberG / energyPlan.macros.fiberG.coerceAtLeast(1)).toFloat(),
                 )
             }
 
@@ -647,6 +654,7 @@ internal fun MealSlotCard(
 internal fun WorkoutsCard(
     workouts: List<WorkoutLog>,
     onDeleteWorkout: (String) -> Unit,
+    onDuplicateWorkout: ((WorkoutLog) -> Unit)? = null,
 ) {
     Card(
         shape = RoundedCornerShape(18.dp),
@@ -717,6 +725,19 @@ internal fun WorkoutsCard(
                             color = AroTheme.macroColors.cardio,
                         )
                         Spacer(modifier = Modifier.width(4.dp))
+                        if (onDuplicateWorkout != null) {
+                            IconButton(
+                                onClick = { onDuplicateWorkout(workout) },
+                                modifier = Modifier.size(28.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ContentCopy,
+                                    contentDescription = "Duplicate workout",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                            }
+                        }
                         IconButton(
                             onClick = { onDeleteWorkout(workout.id) },
                             modifier = Modifier.size(28.dp),
@@ -741,6 +762,7 @@ internal fun MacroBadge(
     amount: String,
     target: String,
     color: Color,
+    fraction: Float = 0f,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -756,6 +778,7 @@ internal fun MacroBadge(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = amount,
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
@@ -766,5 +789,21 @@ internal fun MacroBadge(
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
         )
+        if (fraction > 0f) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Box(
+                modifier = Modifier
+                    .width(44.dp)
+                    .height(4.dp)
+                    .background(color.copy(alpha = 0.2f), RoundedCornerShape(2.dp)),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(fraction.coerceIn(0f, 1f))
+                        .height(4.dp)
+                        .background(color, RoundedCornerShape(2.dp)),
+                )
+            }
+        }
     }
 }

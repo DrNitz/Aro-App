@@ -292,6 +292,9 @@ class MainScreenViewModel(
         }
     }
 
+    suspend fun getLastWorkoutForExercise(exerciseName: String): WorkoutLog? =
+        repository.getLastWorkoutForExercise(exerciseName)
+
     fun toggleFavorite(food: CuratedFoodItem) {
         viewModelScope.launch {
             repository.toggleFavoriteFood(food)

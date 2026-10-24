@@ -60,6 +60,10 @@ interface WorkoutDao {
     @Query("SELECT * FROM workouts WHERE id = :id LIMIT 1")
     suspend fun findWorkout(id: String): WorkoutWithSets?
 
+    @Transaction
+    @Query("SELECT * FROM workouts WHERE exercise_name = :exerciseName ORDER BY logged_at DESC LIMIT 1")
+    suspend fun findLastWorkoutForExercise(exerciseName: String): WorkoutWithSets?
+
     /**
      * Saves a session and its sets atomically, stamping the new sets with the workout's
      * id so the caller never has to manage that foreign key itself.

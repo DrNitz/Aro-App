@@ -302,6 +302,44 @@ class MainScreenViewModelTest {
     }
 
     @Test
+    fun duplicateWorkout_addsDuplicatedWorkoutWithClonedSets() = runTest {
+        val repo = FakeAroRepository()
+        val viewModel = MainScreenViewModel(repo, dateProvider)
+
+        val originalWorkout = WorkoutLog(
+            id = "squat-session-1",
+            type = WorkoutType.STRENGTH,
+            exerciseName = "Barbell Squat",
+            loggedAt = Instant.now(),
+            met = 6.0,
+            durationMinutes = 30,
+            bodyWeightKg = 75.0,
+            sets = listOf(
+                SetEntry(weightKg = 100.0, reps = 5, isCompleted = true),
+                SetEntry(weightKg = 100.0, reps = 5, isCompleted = true),
+            ),
+        )
+        viewModel.logWorkout(originalWorkout)
+
+        val duplicatedWorkout = originalWorkout.copy(
+            id = "squat-session-2",
+            loggedAt = Instant.now(),
+            sets = originalWorkout.sets.map { it.duplicate() },
+        )
+        viewModel.logWorkout(duplicatedWorkout)
+
+        val updatedState = viewModel.uiState.filterIsInstance<MainScreenUiState.Success>().first {
+            it.diaryDay.workouts.size == 2
+        }
+        assertEquals(2, updatedState.diaryDay.workouts.size)
+        val clonedSets = updatedState.diaryDay.workouts[1].sets
+        assertEquals(2, clonedSets.size)
+        assertEquals(100.0, clonedSets[0].weightKg, 0.001)
+        assertEquals(5, clonedSets[0].reps)
+        assertFalse(clonedSets[0].isCompleted)
+    }
+
+    @Test
     fun planState_exposesSelectedDayAndCalendarMarkers() = runTest {
         val repo = FakeAroRepository()
         val viewModel = MainScreenViewModel(repo, dateProvider)

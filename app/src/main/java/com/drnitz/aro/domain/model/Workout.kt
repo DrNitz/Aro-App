@@ -12,11 +12,20 @@ enum class WorkoutType(val label: String) {
 data class SetEntry(
     val weightKg: Double,
     val reps: Int,
+    val isCompleted: Boolean = false,
 ) {
     val isValid: Boolean get() = weightKg > 0.0 && reps > 0
 
     /** Tonnage contributed by this set (load × reps). */
     val volumeKg: Double get() = if (isValid) weightKg * reps else 0.0
+
+    /** Creates a duplicate clone of this set with optional weight/reps adjustments. */
+    fun duplicate(weightDeltaKg: Double = 0.0, repsDelta: Int = 0): SetEntry =
+        SetEntry(
+            weightKg = (weightKg + weightDeltaKg).coerceAtLeast(0.0),
+            reps = (reps + repsDelta).coerceAtLeast(0),
+            isCompleted = false,
+        )
 }
 
 /**
