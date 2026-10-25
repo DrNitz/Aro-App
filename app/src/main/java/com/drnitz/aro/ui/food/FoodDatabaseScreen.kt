@@ -219,144 +219,143 @@ fun FoodDatabaseScreen(
         }
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-        ) {
-            Text(
-                text = "Food & Nutrition",
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            Text(
-                text = "Search whole foods, brands and packaged products",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        item(key = "food_header_controls") {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                AroLoggingDateChip(
+                    selectedDate = selectedDate,
+                    formattedDate = formattedDate,
+                    isToday = isToday,
+                    onSelectDate = onSelectDate,
+                    onToday = onToday,
+                    labelPrefix = if (isPlanning) "Planning for" else "Logging for",
+                )
 
-            Spacer(modifier = Modifier.height(8.dp))
-            AroLoggingDateChip(
-                selectedDate = selectedDate,
-                formattedDate = formattedDate,
-                isToday = isToday,
-                onSelectDate = onSelectDate,
-                onToday = onToday,
-                labelPrefix = if (isPlanning) "Planning for" else "Logging for",
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                placeholder = {
-                    Text(if (source == FoodSource.ONLINE) "Search Open Food Facts..." else "Search 40+ curated foods...")
-                },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                trailingIcon = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (query.isNotEmpty()) {
-                            IconButton(onClick = { query = "" }) {
-                                Icon(Icons.Default.Close, contentDescription = "Clear search")
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    placeholder = {
+                        Text(
+                            text = if (source == FoodSource.ONLINE) "Search Open Food Facts..." else "Search 40+ curated foods...",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                    trailingIcon = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (query.isNotEmpty()) {
+                                IconButton(onClick = { query = "" }, modifier = Modifier.size(36.dp)) {
+                                    Icon(Icons.Default.Close, contentDescription = "Clear search", modifier = Modifier.size(18.dp))
+                                }
+                            }
+                            IconButton(onClick = { showScanner = true }, modifier = Modifier.size(36.dp)) {
+                                Icon(
+                                    imageVector = Icons.Default.QrCodeScanner,
+                                    contentDescription = "Scan barcode",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp),
+                                )
                             }
                         }
-                        IconButton(onClick = { showScanner = true }) {
-                            Icon(
-                                imageVector = Icons.Default.QrCodeScanner,
-                                contentDescription = "Scan barcode",
-                                tint = MaterialTheme.colorScheme.primary,
+                    },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = source == FoodSource.OFFLINE,
+                        onClick = { source = FoodSource.OFFLINE },
+                        label = { Text("Offline Whole Foods", style = MaterialTheme.typography.labelSmall) },
+                        shape = RoundedCornerShape(8.dp),
+                    )
+                    FilterChip(
+                        selected = source == FoodSource.ONLINE,
+                        onClick = { source = FoodSource.ONLINE },
+                        label = { Text("Open Food Facts", style = MaterialTheme.typography.labelSmall) },
+                        shape = RoundedCornerShape(8.dp),
+                    )
+                }
+
+                if (source == FoodSource.OFFLINE) {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(FoodFilter.entries.toList(), key = { it.name }) { option ->
+                            FilterChip(
+                                selected = filter == option,
+                                onClick = { filter = option },
+                                leadingIcon = if (option == FoodFilter.FAVORITES) {
+                                    {
+                                        Icon(
+                                            imageVector = if (filter == option) Icons.Default.Star else Icons.Default.StarBorder,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(15.dp),
+                                        )
+                                    }
+                                } else {
+                                    null
+                                },
+                                label = { Text(option.label, style = MaterialTheme.typography.labelSmall) },
+                                shape = RoundedCornerShape(8.dp),
                             )
                         }
                     }
-                },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-            )
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = source == FoodSource.OFFLINE,
-                    onClick = { source = FoodSource.OFFLINE },
-                    label = { Text("Offline Whole Foods", style = MaterialTheme.typography.labelSmall) },
-                    shape = RoundedCornerShape(8.dp),
-                )
-                FilterChip(
-                    selected = source == FoodSource.ONLINE,
-                    onClick = { source = FoodSource.ONLINE },
-                    label = { Text("Open Food Facts", style = MaterialTheme.typography.labelSmall) },
-                    shape = RoundedCornerShape(8.dp),
-                )
-            }
-
-            if (source == FoodSource.OFFLINE) {
-                Spacer(modifier = Modifier.height(6.dp))
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(FoodFilter.entries.toList(), key = { it.name }) { option ->
-                        FilterChip(
-                            selected = filter == option,
-                            onClick = { filter = option },
-                            leadingIcon = if (option == FoodFilter.FAVORITES) {
-                                {
-                                    Icon(
-                                        imageVector = if (filter == option) Icons.Default.Star else Icons.Default.StarBorder,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(15.dp),
-                                    )
-                                }
-                            } else {
-                                null
-                            },
-                            label = { Text(option.label, style = MaterialTheme.typography.labelSmall) },
-                            shape = RoundedCornerShape(8.dp),
-                        )
-                    }
-                }
-
-                if (filter == FoodFilter.ALL || filter == FoodFilter.CURATED) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(categories, key = { it }) { category ->
-                            FilterChip(
-                                selected = selectedCategory == category,
-                                onClick = { selectedCategory = category },
-                                label = { Text(category, style = MaterialTheme.typography.labelSmall) },
-                                shape = RoundedCornerShape(8.dp),
-                            )
+                    if (filter == FoodFilter.ALL || filter == FoodFilter.CURATED) {
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(categories, key = { it }) { category ->
+                                FilterChip(
+                                    selected = selectedCategory == category,
+                                    onClick = { selectedCategory = category },
+                                    label = { Text(category, style = MaterialTheme.typography.labelSmall) },
+                                    shape = RoundedCornerShape(8.dp),
+                                )
+                            }
                         }
                     }
                 }
             }
         }
 
-        Spacer(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(MaterialTheme.colorScheme.outlineVariant),
-        )
-
         when {
             source == FoodSource.ONLINE && isOnlineLoading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Text(
-                            text = "Searching Open Food Facts...",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                item(key = "food_online_loading") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 48.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = "Searching Open Food Facts...",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }
 
             source == FoodSource.OFFLINE && isOfflineLoading && displayResults.isEmpty() -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                item(key = "food_offline_loading") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 48.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    }
                 }
             }
 
@@ -367,47 +366,54 @@ fun FoodDatabaseScreen(
                 (source == FoodSource.OFFLINE &&
                     filter == FoodFilter.RECENT &&
                     recentFoods.isEmpty()) -> {
-                EmptyFoodState(
-                    title = when {
-                        filter == FoodFilter.FAVORITES -> "No favorites yet"
-                        filter == FoodFilter.RECENT -> "Nothing logged recently"
-                        else -> "Search the Open Food Facts catalogue"
-                    },
-                    subtitle = when {
-                        filter == FoodFilter.FAVORITES -> "Tap the star on any food to keep it one tap away."
-                        filter == FoodFilter.RECENT -> "Foods you log will appear here automatically."
-                        else -> "Type at least two characters, or scan a barcode."
-                    },
-                )
+                item(key = "food_empty_prompt") {
+                    EmptyFoodState(
+                        title = when {
+                            filter == FoodFilter.FAVORITES -> "No favorites yet"
+                            filter == FoodFilter.RECENT -> "Nothing logged recently"
+                            else -> "Search the Open Food Facts catalogue"
+                        },
+                        subtitle = when {
+                            filter == FoodFilter.FAVORITES -> "Tap the star on any food to keep it one tap away."
+                            filter == FoodFilter.RECENT -> "Foods you log will appear here automatically."
+                            else -> "Type at least two characters, or scan a barcode."
+                        },
+                    )
+                }
             }
 
             searchError != null && displayResults.isEmpty() -> {
-                EmptyFoodState(
-                    title = "No results",
-                    subtitle = searchError!!,
-                    actionLabel = if (source == FoodSource.ONLINE) null else "Search Open Food Facts",
-                    onAction = { source = FoodSource.ONLINE },
-                )
+                item(key = "food_empty_error") {
+                    EmptyFoodState(
+                        title = "No results",
+                        subtitle = searchError!!,
+                        actionLabel = if (source == FoodSource.ONLINE) null else "Search Open Food Facts",
+                        onAction = { source = FoodSource.ONLINE },
+                    )
+                }
             }
 
             displayResults.isEmpty() -> {
-                EmptyFoodState(
-                    title = if (query.isBlank()) "No foods available" else "No foods match \"$query\"",
-                    subtitle = if (source == FoodSource.OFFLINE) {
-                        "The curated library is bundled offline. Try Open Food Facts for branded products."
-                    } else {
-                        "Try a different spelling or scan the package barcode."
-                    },
-                    actionLabel = if (source == FoodSource.OFFLINE) "Search Open Food Facts" else null,
-                    onAction = { source = FoodSource.ONLINE },
-                )
+                item(key = "food_empty_not_found") {
+                    EmptyFoodState(
+                        title = if (query.isBlank()) "No foods available" else "No foods match \"$query\"",
+                        subtitle = if (source == FoodSource.OFFLINE) {
+                            "The curated library is bundled offline. Try Open Food Facts for branded products."
+                        } else {
+                            "Try a different spelling or scan the package barcode."
+                        },
+                        actionLabel = if (source == FoodSource.OFFLINE) "Search Open Food Facts" else null,
+                        onAction = { source = FoodSource.ONLINE },
+                    )
+                }
             }
 
             else -> {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    searchError?.let { error ->
+                searchError?.let { error ->
+                    item(key = "food_search_error_banner") {
                         Surface(
                             color = MaterialTheme.colorScheme.errorContainer,
+                            shape = RoundedCornerShape(8.dp),
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             Text(
@@ -418,29 +424,28 @@ fun FoodDatabaseScreen(
                             )
                         }
                     }
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        item {
-                            Text(
-                                text = "${displayResults.size} ${if (displayResults.size == 1) "food" else "foods"}",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(start = 4.dp),
-                            )
-                        }
-                        items(displayResults, key = { it.id }) { food ->
-                            FoodDatabaseCard(
-                                food = food,
-                                isFavorite = food.id in favoriteIds,
-                                onOpen = { configuringFood = food },
-                                onToggleFavorite = { onToggleFavorite(food) },
-                            )
-                        }
-                        item { Spacer(modifier = Modifier.height(8.dp)) }
-                    }
+                }
+
+                item(key = "food_count_label") {
+                    Text(
+                        text = "${displayResults.size} ${if (displayResults.size == 1) "food" else "foods"}",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 4.dp),
+                    )
+                }
+
+                items(displayResults, key = { it.id }) { food ->
+                    FoodDatabaseCard(
+                        food = food,
+                        isFavorite = food.id in favoriteIds,
+                        onOpen = { configuringFood = food },
+                        onToggleFavorite = { onToggleFavorite(food) },
+                    )
+                }
+
+                item(key = "food_bottom_spacing") {
+                    Spacer(modifier = Modifier.height(10.dp))
                 }
             }
         }
@@ -623,11 +628,12 @@ private fun EmptyFoodState(
     subtitle: String,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(28.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 36.dp),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {

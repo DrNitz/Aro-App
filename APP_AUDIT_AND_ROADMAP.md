@@ -710,6 +710,39 @@ Elevate touch targets, empty states, and semantic theming consistency across sec
 
 ---
 
+### Phase 6: Screen Real Estate & Navigation Usability Optimization — COMPLETE
+
+#### Objective
+Eliminate viewport obstruction and recover vertical screen space across compact mobile devices in the Food, Workouts, and Goals tabs, while streamlining the persistent top bar and bottom navigation bar.
+
+#### Changes & Optimizations
+1. **Persistent Top Bar (`AroHeader.kt`)**:
+   - Integrated animated section indicators (`activeSection`) beside the brand wordmark separated by a subtle vertical hairline.
+   - Built a vertical slide-and-fade transition (`AnimatedContent`) when navigating between tabs ("Diary", "Food & Nutrition", "Workouts", "Goals & Body", "Monthly Plan").
+   - Reduced padding and action icon container sizes from 48dp to 38dp.
+
+2. **`FoodDatabaseScreen.kt`**:
+   - Removed redundant fixed 300dp header containing "Food & Nutrition" title/subtitle.
+   - Migrated date chip, search field, source toggle (Offline / Open Food Facts), and filter/category chips into scrollable header items within the root `LazyColumn`.
+   - The entire search and filter apparatus now smoothly scrolls off-screen when browsing foods, dedicating the entire screen viewport to food cards.
+   - Updated loading, error, and empty states (`EmptyFoodState`) to render cleanly within the `LazyColumn`.
+
+3. **`ExerciseDatabaseScreen.kt`**:
+   - Removed redundant fixed 380dp header containing "Workouts" headline and count.
+   - Migrated date chip, `QuickCardioSection`, search field, target muscle filter chips, and equipment filter chips into scrollable header items within the root `LazyColumn`.
+   - All search and filter controls scroll off-screen during exercise browsing, eliminating exercise card obstruction on compact screens.
+
+4. **`GoalsBodyScreen.kt`**:
+   - Removed redundant in-screen "Goals & Body" headline and subtitle block to reclaim top-of-screen space.
+
+5. **Compact Bottom Navigation Bar (`MainScreen.kt`)**:
+   - Replaced bloated 80dp standard `NavigationBar` with sleek 52dp `AroBottomNavigationBar`.
+   - Applied `WindowInsets.navigationBars` to sit flush above system gesture and 3-button bars without awkward whitespace.
+   - Sized tab item icons to 20dp, active indicator pills to 26dp height, and tab labels to 10sp with compact vertical padding.
+   - Preserved `NavigationRail` for wide screen devices (`maxWidth >= 720.dp`).
+
+---
+
 ## 7. Verification & Test Results Reference
 
 ### Unit Tests

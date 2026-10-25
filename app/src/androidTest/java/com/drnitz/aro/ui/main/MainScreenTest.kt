@@ -23,5 +23,6 @@ class MainScreenTest {
 
         composeTestRule.onNodeWithText("Aro").assertExists()
         composeTestRule.onNodeWithText("by Dr.Nitz").assertExists()
+        composeTestRule.onNodeWithText("Diary").assertExists()
     }
 }

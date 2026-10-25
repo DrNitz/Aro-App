@@ -47,9 +47,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.adaptive.navigationsuite.ExperimentalMaterial3AdaptiveNavigationSuiteApi
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -263,14 +269,13 @@ fun MainScreen(
     }
 }
 
-private enum class AroTab(@StringRes val labelRes: Int, val icon: ImageVector) {
+private enum class AroTab(@param:StringRes val labelRes: Int, val icon: ImageVector) {
     DIARY(R.string.tab_diary, Icons.AutoMirrored.Filled.MenuBook),
     FOOD(R.string.tab_food, Icons.Default.Restaurant),
     WORKOUTS(R.string.tab_workouts, Icons.Default.FitnessCenter),
     GOALS(R.string.tab_goals, Icons.Default.TrackChanges),
 }
 
-@OptIn(ExperimentalMaterial3AdaptiveNavigationSuiteApi::class)
 @Composable
 internal fun MainScreenContent(
     state: MainScreenUiState.Success,
@@ -340,196 +345,310 @@ internal fun MainScreenContent(
         }
     }
 
-    // Adaptive navigation suite: bottom NavigationBar on compact phones, left
-    // NavigationRail on medium/expanded widths (foldables, tablets, landscape)
-    // as decided by the material3-adaptive window size classes.
-    NavigationSuiteScaffold(
-        modifier = modifier.fillMaxSize(),
-        navigationSuiteItems = {
-            AroTab.entries.forEachIndexed { index, tab ->
-                item(
-                    selected = currentTab.ordinal == index,
-                    onClick = { selectTab(index) },
-                    icon = { Icon(imageVector = tab.icon, contentDescription = null) },
-                    label = {
-                        Text(
-                            text = stringResource(tab.labelRes),
-                            style = MaterialTheme.typography.labelSmall,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+    val activeSection = when {
+        showPlanView -> "Monthly Plan"
+        currentTab == AroTab.DIARY -> "Diary"
+        currentTab == AroTab.FOOD -> "Food & Nutrition"
+        currentTab == AroTab.WORKOUTS -> "Workouts"
+        currentTab == AroTab.GOALS -> "Goals & Body"
+        else -> "Diary"
+    }
+
+    val tabContent: @Composable (PaddingValues) -> Unit = { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+        ) {
+            when (currentTab) {
+                AroTab.DIARY -> {
+                    if (showPlanView) {
+                        PlanTabScreen(
+                            state = state,
+                            planState = planState,
+                            foodLibrary = foodLibrary,
+                            exerciseLibrary = exerciseLibrary,
+                            openFoodFactsClient = openFoodFactsClient,
+                            onBack = {
+                                showPlanView = false
+                                returnToPlanAfterPlanAdd = false
+                            },
+                            onSelectDate = onSelectDate,
+                            onToday = onToday,
+                            onPlanFoodInFoodTab = {
+                                returnToPlanAfterPlanAdd = true
+                                showPlanView = false
+                                selectedTab = AroTab.FOOD.ordinal
+                            },
+                            onPlanExerciseInWorkoutTab = {
+                                returnToPlanAfterPlanAdd = true
+                                showPlanView = false
+                                selectedTab = AroTab.WORKOUTS.ordinal
+                            },
+                            onSavePlanItem = onSavePlanItem,
+                            onDeletePlanItem = onDeletePlanItem,
+                            onCompletePlanOccurrence = onCompletePlanOccurrence,
+                            onSkipPlanOccurrence = onSkipPlanOccurrence,
+                            onUncompletePlanOccurrence = onUncompletePlanOccurrence,
+                            onAddFood = onAddFood,
+                            onAddWater = onAddWater,
+                            onStartFast = onStartFast,
+                            onLogWorkout = onLogWorkout,
                         )
-                    },
-                )
-            }
-        },
-    ) {
-        Scaffold(
-            containerColor = MaterialTheme.colorScheme.background,
-            topBar = {
-                AroHeader(
-                    onOpenNotifications = { showNotificationSettingsDialog = true },
-                    onOpenGoals = { selectedTab = AroTab.GOALS.ordinal },
-                )
-            },
-        ) { innerPadding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-            ) {
-                when (currentTab) {
-                    AroTab.DIARY -> {
-                        if (showPlanView) {
-                            PlanTabScreen(
-                                state = state,
-                                planState = planState,
-                                foodLibrary = foodLibrary,
-                                exerciseLibrary = exerciseLibrary,
-                                openFoodFactsClient = openFoodFactsClient,
-                                onBack = {
-                                    showPlanView = false
-                                    returnToPlanAfterPlanAdd = false
-                                },
-                                onSelectDate = onSelectDate,
-                                onToday = onToday,
-                                onPlanFoodInFoodTab = {
-                                    returnToPlanAfterPlanAdd = true
-                                    showPlanView = false
-                                    selectedTab = AroTab.FOOD.ordinal
-                                },
-                                onPlanExerciseInWorkoutTab = {
-                                    returnToPlanAfterPlanAdd = true
-                                    showPlanView = false
-                                    selectedTab = AroTab.WORKOUTS.ordinal
-                                },
-                                onSavePlanItem = onSavePlanItem,
-                                onDeletePlanItem = onDeletePlanItem,
-                                onCompletePlanOccurrence = onCompletePlanOccurrence,
-                                onSkipPlanOccurrence = onSkipPlanOccurrence,
-                                onUncompletePlanOccurrence = onUncompletePlanOccurrence,
-                                onAddFood = onAddFood,
-                                onAddWater = onAddWater,
-                                onStartFast = onStartFast,
-                                onLogWorkout = onLogWorkout,
-                            )
-                        } else {
-                            DiaryTabContent(
-                                state = state,
-                                planState = planState,
-                                foodLibrary = foodLibrary,
-                                exerciseLibrary = exerciseLibrary,
-                                openFoodFactsClient = openFoodFactsClient,
-                                onSelectDate = onSelectDate,
-                                onToday = onToday,
-                                onAddWater = onAddWater,
-                                onResetWater = onResetWater,
-                                onStartFast = onStartFast,
-                                onEndFast = onEndFast,
-                                onAddFood = onAddFood,
-                                onUpdateFood = onUpdateFood,
-                                onDeleteFood = onDeleteFood,
-                                onLogWorkout = onLogWorkout,
-                                onDeleteWorkout = onDeleteWorkout,
-                                onRecordFoodUsage = onRecordFoodUsage,
-                                onPlanMonthChange = onPlanMonthChange,
-                                onSavePlanItem = onSavePlanItem,
-                                onOpenPlan = { showPlanView = true },
-                                onOpenNotifications = { showNotificationSettingsDialog = true },
-                                onLoadPreviousWorkout = onLoadPreviousWorkout,
-                                onItemClick = onItemClick,
-                            )
-                        }
+                    } else {
+                        DiaryTabContent(
+                            state = state,
+                            planState = planState,
+                            foodLibrary = foodLibrary,
+                            exerciseLibrary = exerciseLibrary,
+                            openFoodFactsClient = openFoodFactsClient,
+                            onSelectDate = onSelectDate,
+                            onToday = onToday,
+                            onAddWater = onAddWater,
+                            onResetWater = onResetWater,
+                            onStartFast = onStartFast,
+                            onEndFast = onEndFast,
+                            onAddFood = onAddFood,
+                            onUpdateFood = onUpdateFood,
+                            onDeleteFood = onDeleteFood,
+                            onLogWorkout = onLogWorkout,
+                            onDeleteWorkout = onDeleteWorkout,
+                            onRecordFoodUsage = onRecordFoodUsage,
+                            onPlanMonthChange = onPlanMonthChange,
+                            onSavePlanItem = onSavePlanItem,
+                            onOpenPlan = { showPlanView = true },
+                            onOpenNotifications = { showNotificationSettingsDialog = true },
+                            onLoadPreviousWorkout = onLoadPreviousWorkout,
+                            onItemClick = onItemClick,
+                        )
                     }
+                }
 
-                    AroTab.FOOD -> {
-                        if (foodLibrary != null) {
-                            FoodDatabaseScreen(
-                                foodLibrary = foodLibrary,
-                                favoriteFoods = state.favoriteFoods,
-                                recentFoods = state.recentFoods,
-                                openFoodFactsClient = openFoodFactsClient,
-                                selectedDate = state.selectedDate,
-                                formattedDate = state.formattedDate,
-                                isToday = state.isToday,
-                                isPlanning = planningFuture,
-                                onSelectDate = onSelectDate,
-                                onToday = onToday,
-                                onFoodLogged = { entry, food ->
-                                    if (planningFuture) {
-                                        onSavePlanItem(
-                                            entry.toPlanItem(state.selectedDate, imageUrl = food.image),
-                                        )
-                                        if (returnToPlanAfterPlanAdd) {
-                                            returnToPlanAfterPlanAdd = false
-                                            selectedTab = AroTab.DIARY.ordinal
-                                            showPlanView = true
-                                        }
-                                    } else {
-                                        onAddFood(entry)
-                                        onRecordFoodUsage(food, entry.grams)
-                                    }
-                                },
-                                onToggleFavorite = onToggleFavorite,
-                            )
-                        } else {
-                            MissingLibrary(stringResource(R.string.library_food_loading))
-                        }
-                    }
-
-                    AroTab.WORKOUTS -> {
-                        if (exerciseLibrary != null) {
-                            ExerciseDatabaseScreen(
-                                exerciseLibrary = exerciseLibrary,
-                                userWeightKg = state.profile.weightKg,
-                                userHeightCm = state.profile.heightCm,
-                                selectedDate = state.selectedDate,
-                                formattedDate = state.formattedDate,
-                                isToday = state.isToday,
-                                isPlanning = planningFuture,
-                                onSelectDate = onSelectDate,
-                                onToday = onToday,
-                                onWorkoutLogged = { workout ->
-                                    if (planningFuture) {
-                                        onSavePlanItem(workout.toPlanItem(state.selectedDate))
-                                        if (returnToPlanAfterPlanAdd) {
-                                            returnToPlanAfterPlanAdd = false
-                                            selectedTab = AroTab.DIARY.ordinal
-                                            showPlanView = true
-                                        }
-                                    } else {
-                                        onLogWorkout(workout)
-                                    }
-                                },
-                                onExercisePlanned = { exercise ->
-                                    onSavePlanItem(exercise.toPlanItem(state.selectedDate))
+                AroTab.FOOD -> {
+                    if (foodLibrary != null) {
+                        FoodDatabaseScreen(
+                            foodLibrary = foodLibrary,
+                            favoriteFoods = state.favoriteFoods,
+                            recentFoods = state.recentFoods,
+                            openFoodFactsClient = openFoodFactsClient,
+                            selectedDate = state.selectedDate,
+                            formattedDate = state.formattedDate,
+                            isToday = state.isToday,
+                            isPlanning = planningFuture,
+                            onSelectDate = onSelectDate,
+                            onToday = onToday,
+                            onFoodLogged = { entry, food ->
+                                if (planningFuture) {
+                                    onSavePlanItem(
+                                        entry.toPlanItem(state.selectedDate, imageUrl = food.image),
+                                    )
                                     if (returnToPlanAfterPlanAdd) {
                                         returnToPlanAfterPlanAdd = false
                                         selectedTab = AroTab.DIARY.ordinal
                                         showPlanView = true
                                     }
-                                },
-                                onLoadPreviousWorkout = onLoadPreviousWorkout,
-                            )
-                        } else {
-                            MissingLibrary(stringResource(R.string.library_exercise_loading))
-                        }
+                                } else {
+                                    onAddFood(entry)
+                                    onRecordFoodUsage(food, entry.grams)
+                                }
+                            },
+                            onToggleFavorite = onToggleFavorite,
+                        )
+                    } else {
+                        MissingLibrary(stringResource(R.string.library_food_loading))
                     }
-
-                    AroTab.GOALS -> GoalsBodyScreen(
-                        profile = state.profile,
-                        energyPlan = state.energyPlan,
-                        onOpenBodyPlanner = { onItemClick(BodyPlanner) },
-                        onOpenVitals = { onItemClick(ClinicalRecords(0)) },
-                        onOpenDataManagement = { onItemClick(DataManagement) },
-                        onOpenIntakeHistory = { onItemClick(IntakeHistory(0)) },
-                    )
                 }
+
+                AroTab.WORKOUTS -> {
+                    if (exerciseLibrary != null) {
+                        ExerciseDatabaseScreen(
+                            exerciseLibrary = exerciseLibrary,
+                            userWeightKg = state.profile.weightKg,
+                            userHeightCm = state.profile.heightCm,
+                            selectedDate = state.selectedDate,
+                            formattedDate = state.formattedDate,
+                            isToday = state.isToday,
+                            isPlanning = planningFuture,
+                            onSelectDate = onSelectDate,
+                            onToday = onToday,
+                            onWorkoutLogged = { workout ->
+                                if (planningFuture) {
+                                    onSavePlanItem(workout.toPlanItem(state.selectedDate))
+                                    if (returnToPlanAfterPlanAdd) {
+                                        returnToPlanAfterPlanAdd = false
+                                        selectedTab = AroTab.DIARY.ordinal
+                                        showPlanView = true
+                                    }
+                                } else {
+                                    onLogWorkout(workout)
+                                }
+                            },
+                            onExercisePlanned = { exercise ->
+                                onSavePlanItem(exercise.toPlanItem(state.selectedDate))
+                                if (returnToPlanAfterPlanAdd) {
+                                    returnToPlanAfterPlanAdd = false
+                                    selectedTab = AroTab.DIARY.ordinal
+                                    showPlanView = true
+                                }
+                            },
+                            onLoadPreviousWorkout = onLoadPreviousWorkout,
+                        )
+                    } else {
+                        MissingLibrary(stringResource(R.string.library_exercise_loading))
+                    }
+                }
+
+                AroTab.GOALS -> GoalsBodyScreen(
+                    profile = state.profile,
+                    energyPlan = state.energyPlan,
+                    onOpenBodyPlanner = { onItemClick(BodyPlanner) },
+                    onOpenVitals = { onItemClick(ClinicalRecords(0)) },
+                    onOpenDataManagement = { onItemClick(DataManagement) },
+                    onOpenIntakeHistory = { onItemClick(IntakeHistory(0)) },
+                )
             }
+        }
+    }
+
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val isWideScreen = maxWidth >= 720.dp
+
+        if (isWideScreen) {
+            Row(modifier = Modifier.fillMaxSize()) {
+                NavigationRail(
+                    modifier = Modifier.fillMaxHeight(),
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                ) {
+                    Spacer(modifier = Modifier.weight(1f))
+                    AroTab.entries.forEachIndexed { index, tab ->
+                        NavigationRailItem(
+                            selected = currentTab.ordinal == index,
+                            onClick = { selectTab(index) },
+                            icon = { Icon(imageVector = tab.icon, contentDescription = null) },
+                            label = {
+                                Text(
+                                    text = stringResource(tab.labelRes),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            },
+                        )
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+                Scaffold(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    topBar = {
+                        AroHeader(
+                            onOpenNotifications = { showNotificationSettingsDialog = true },
+                            onOpenGoals = { selectedTab = AroTab.GOALS.ordinal },
+                            activeSection = activeSection,
+                        )
+                    },
+                    content = tabContent,
+                )
+            }
+        } else {
+            Scaffold(
+                containerColor = MaterialTheme.colorScheme.background,
+                topBar = {
+                    AroHeader(
+                        onOpenNotifications = { showNotificationSettingsDialog = true },
+                        onOpenGoals = { selectedTab = AroTab.GOALS.ordinal },
+                        activeSection = activeSection,
+                    )
+                },
+                bottomBar = {
+                    AroBottomNavigationBar(
+                        currentTab = currentTab,
+                        onSelectTab = selectTab,
+                    )
+                },
+                content = tabContent,
+            )
         }
     }
 
     if (showNotificationSettingsDialog) {
         NotificationSettingsDialog(onDismiss = { showNotificationSettingsDialog = false })
+    }
+}
+
+@Composable
+private fun AroBottomNavigationBar(
+    currentTab: AroTab,
+    onSelectTab: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.navigationBars),
+        ) {
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                thickness = 0.5.dp,
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+                    .padding(horizontal = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceAround,
+            ) {
+                AroTab.entries.forEachIndexed { index, tab ->
+                    val selected = currentTab.ordinal == index
+                    val activeColor = MaterialTheme.colorScheme.primary
+                    val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onSelectTab(index) }
+                            .padding(vertical = 3.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .height(26.dp)
+                                .clip(RoundedCornerShape(13.dp))
+                                .background(
+                                    if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                                )
+                                .padding(horizontal = 14.dp, vertical = 3.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = tab.icon,
+                                contentDescription = null,
+                                tint = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else inactiveColor,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = stringResource(tab.labelRes),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontSize = 10.sp,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                letterSpacing = 0.2.sp,
+                            ),
+                            color = if (selected) activeColor else inactiveColor,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
