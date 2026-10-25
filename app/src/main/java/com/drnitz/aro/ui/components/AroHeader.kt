@@ -35,13 +35,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.drnitz.aro.R
+import com.drnitz.aro.ui.mascot.AroMascot
+import com.drnitz.aro.ui.mascot.MascotMood
 
 /**
- * Brand header: text-only wordmark with animated active section indicator.
+ * Brand header: text-only wordmark with animated active section indicator and interactive mascot.
  *
  * "Aro" carries the brand and "by Dr.Nitz" the attribution. The active tab/section
  * name sits beside it with a smooth vertical slide transition, saving vertical space
- * across all main screens.
+ * across all main screens. The interactive companion mascot "Aro Bot" sits on the right.
  */
 @Composable
 fun AroHeader(
@@ -49,6 +51,8 @@ fun AroHeader(
     onOpenGoals: () -> Unit,
     modifier: Modifier = Modifier,
     activeSection: String = "Diary",
+    onOpenAssistant: (() -> Unit)? = null,
+    mascotMood: MascotMood = MascotMood.IDLE,
 ) {
     Column(
         modifier = modifier
@@ -110,6 +114,15 @@ fun AroHeader(
                     color = MaterialTheme.colorScheme.onBackground,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                )
+            }
+
+            if (onOpenAssistant != null) {
+                AroMascot(
+                    mood = mascotMood,
+                    size = 34.dp,
+                    onClick = onOpenAssistant,
+                    modifier = Modifier.padding(end = 4.dp),
                 )
             }
 

@@ -119,6 +119,8 @@ import com.drnitz.aro.ui.components.AroLoggingDateLabel
 import com.drnitz.aro.ui.exercise.ExerciseDatabaseScreen
 import com.drnitz.aro.ui.food.FoodDatabaseScreen
 import com.drnitz.aro.ui.goals.GoalsBodyScreen
+import com.drnitz.aro.ui.mascot.AroAssistantDialog
+import com.drnitz.aro.ui.mascot.resolveMascotMood
 import com.drnitz.aro.ui.notifications.NotificationSettingsDialog
 import com.drnitz.aro.ui.plan.AroMonthCalendar
 import com.drnitz.aro.ui.plan.AroWeekStrip
@@ -312,6 +314,8 @@ internal fun MainScreenContent(
     var showPlanView by rememberSaveable { mutableStateOf(false) }
     var returnToPlanAfterPlanAdd by rememberSaveable { mutableStateOf(false) }
     var showNotificationSettingsDialog by remember { mutableStateOf(false) }
+    var showAssistantDialog by remember { mutableStateOf(false) }
+    val mascotMood = remember(state) { resolveMascotMood(state) }
     val currentTab = AroTab.entries.getOrElse(selectedTab) { AroTab.DIARY }
     val planningFuture = state.selectedDate.isAfter(state.today)
 
@@ -544,6 +548,8 @@ internal fun MainScreenContent(
                             onOpenNotifications = { showNotificationSettingsDialog = true },
                             onOpenGoals = { selectedTab = AroTab.GOALS.ordinal },
                             activeSection = activeSection,
+                            onOpenAssistant = { showAssistantDialog = true },
+                            mascotMood = mascotMood,
                         )
                     },
                     content = tabContent,
@@ -557,6 +563,8 @@ internal fun MainScreenContent(
                         onOpenNotifications = { showNotificationSettingsDialog = true },
                         onOpenGoals = { selectedTab = AroTab.GOALS.ordinal },
                         activeSection = activeSection,
+                        onOpenAssistant = { showAssistantDialog = true },
+                        mascotMood = mascotMood,
                     )
                 },
                 bottomBar = {
@@ -572,6 +580,24 @@ internal fun MainScreenContent(
 
     if (showNotificationSettingsDialog) {
         NotificationSettingsDialog(onDismiss = { showNotificationSettingsDialog = false })
+    }
+
+    if (showAssistantDialog) {
+        AroAssistantDialog(
+            state = state,
+            onDismiss = { showAssistantDialog = false },
+            onAddWater = onAddWater,
+            onOpenFast = { onStartFast(16) },
+            onEndFast = onEndFast,
+            onOpenAddFood = {
+                showAssistantDialog = false
+                selectedTab = AroTab.FOOD.ordinal
+            },
+            onOpenLogWorkout = {
+                showAssistantDialog = false
+                selectedTab = AroTab.WORKOUTS.ordinal
+            },
+        )
     }
 }
 
