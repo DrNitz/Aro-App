@@ -70,74 +70,60 @@ internal fun HydrationWidget(
         Column(modifier = Modifier.padding(14.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.WaterDrop,
+                    contentDescription = null,
+                    tint = AroTheme.macroColors.water,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = if (planningMode) "Hydration plan" else "Hydration",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(
+                    onClick = onOpenReminders,
+                    modifier = Modifier.size(48.dp),
+                ) {
                     Icon(
-                        imageVector = Icons.Default.WaterDrop,
-                        contentDescription = null,
-                        tint = AroTheme.macroColors.water,
-                        modifier = Modifier.size(18.dp),
+                        imageVector = Icons.Default.Notifications,
+                        contentDescription = "Hydration Reminders",
+                        tint = AroTheme.macroColors.water.copy(alpha = 0.7f),
+                        modifier = Modifier.size(13.dp),
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = if (planningMode) "Hydration plan" else "Hydration",
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    IconButton(
-                        onClick = onOpenReminders,
-                        modifier = Modifier.size(20.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = "Hydration Reminders",
-                            tint = AroTheme.macroColors.water.copy(alpha = 0.7f),
-                            modifier = Modifier.size(13.dp),
-                        )
-                    }
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val shownProgress = if (targetWaterMl <= 0) 0f else {
-                        (shownWaterMl.toFloat() / targetWaterMl).coerceIn(0f, 1f)
-                    }
-                    val percent = (shownProgress * 100).roundToInt()
-                    Text(
-                        text = "$percent%",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = AroTheme.macroColors.water,
-                    )
-                    if (!planningMode && waterMl > 0) {
-                        Spacer(modifier = Modifier.width(4.dp))
-                        IconButton(
-                            onClick = onResetWater,
-                            modifier = Modifier.size(22.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = "Reset Water",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                modifier = Modifier.size(14.dp),
-                            )
-                        }
-                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = if (planningMode) {
-                    "$shownWaterMl / $targetWaterMl mL planned"
-                } else {
-                    "$waterMl / $targetWaterMl mL"
-                },
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface,
-            )
+            val shownProgress = if (targetWaterMl <= 0) 0f else {
+                (shownWaterMl.toFloat() / targetWaterMl).coerceIn(0f, 1f)
+            }
+            val percent = (shownProgress * 100).roundToInt()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = if (planningMode) {
+                        "$shownWaterMl / $targetWaterMl mL planned"
+                    } else {
+                        "$waterMl / $targetWaterMl mL"
+                    },
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = "$percent%",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = AroTheme.macroColors.water,
+                )
+            }
             if (planningMode && shownWaterMl > 0) {
                 Text(
                     text = "Not logged",
@@ -158,9 +144,6 @@ internal fun HydrationWidget(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            val shownProgress = if (targetWaterMl <= 0) 0f else {
-                (shownWaterMl.toFloat() / targetWaterMl).coerceIn(0f, 1f)
-            }
             LinearProgressIndicator(
                 progress = { shownProgress },
                 modifier = Modifier
@@ -211,24 +194,42 @@ internal fun HydrationWidget(
 
             Spacer(modifier = Modifier.height(2.dp))
 
-            TextButton(
-                onClick = onOpenHistory,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = AroTheme.macroColors.water,
-                ),
-                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(26.dp),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    imageVector = Icons.Default.History,
-                    contentDescription = null,
-                    tint = AroTheme.macroColors.water.copy(alpha = 0.8f),
-                    modifier = Modifier.size(13.dp),
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("View water log", style = MaterialTheme.typography.labelSmall)
+                TextButton(
+                    onClick = onOpenHistory,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = AroTheme.macroColors.water,
+                    ),
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(26.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.History,
+                        contentDescription = null,
+                        tint = AroTheme.macroColors.water.copy(alpha = 0.8f),
+                        modifier = Modifier.size(13.dp),
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("View water log", style = MaterialTheme.typography.labelSmall)
+                }
+                if (!planningMode && waterMl > 0) {
+                    IconButton(
+                        onClick = onResetWater,
+                        modifier = Modifier.size(48.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Reset Water",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            modifier = Modifier.size(14.dp),
+                        )
+                    }
+                }
             }
         }
     }

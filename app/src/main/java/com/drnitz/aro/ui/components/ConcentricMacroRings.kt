@@ -23,11 +23,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.drnitz.aro.theme.AroTheme
+import kotlin.math.roundToInt
 
 /**
  * Concentric Radial Rings for Calories, Protein, Carbs, and Fat.
@@ -86,13 +89,37 @@ fun ConcentricMacroRings(
         animCalOver.animateTo(rawCalOver, animSpec)
     }
 
-    val macroColors = AroTheme.macroColors
+    val macroSeriesDescription = remember(
+        caloriesEaten,
+        caloriesBurned,
+        targetCalories,
+        proteinEatenG,
+        targetProteinG,
+        carbsEatenG,
+        targetCarbsG,
+        fatEatenG,
+        targetFatG,
+    ) {
+        buildString {
+            append("Macro rings. ")
+            append("Calories $netCalories of $targetCalories kcal. ")
+            append("Protein ${proteinEatenG.roundToInt()} of ${targetProteinG.roundToInt()} grams. ")
+            append("Carbs ${carbsEatenG.roundToInt()} of ${targetCarbsG.roundToInt()} grams. ")
+            append("Fat ${fatEatenG.roundToInt()} of ${targetFatG.roundToInt()} grams.")
+        }
+    }
 
     Box(
         modifier = modifier.size(size),
         contentAlignment = Alignment.Center,
     ) {
-        Canvas(modifier = Modifier.size(size)) {
+        val macroColors = AroTheme.macroColors
+
+        Canvas(
+            modifier = Modifier
+                .size(size)
+                .semantics { contentDescription = macroSeriesDescription },
+        ) {
             val strokePx = strokeWidth.toPx()
             val center = Offset(this.size.width / 2f, this.size.height / 2f)
 

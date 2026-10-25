@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -46,6 +47,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -99,7 +103,7 @@ fun AroWeekStrip(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = 8.dp, vertical = 10.dp),
         ) {
             // Header Row: Month title + Expand chevron + Prev/Next buttons + Today jump
             Row(
@@ -109,6 +113,7 @@ fun AroWeekStrip(
                 Row(
                     modifier = Modifier
                         .weight(1f)
+                        .heightIn(min = 48.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .clickable(role = Role.Button) { isExpanded = !isExpanded }
                         .padding(vertical = 4.dp, horizontal = 2.dp),
@@ -159,12 +164,13 @@ fun AroWeekStrip(
                             onMonthChange(newMonth)
                         }
                     },
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.size(48.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Default.ChevronLeft,
                         contentDescription = "Previous week",
                         tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp),
                     )
                 }
 
@@ -177,12 +183,13 @@ fun AroWeekStrip(
                             onMonthChange(newMonth)
                         }
                     },
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.size(48.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Default.ChevronRight,
                         contentDescription = "Next week",
                         tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp),
                     )
                 }
             }
@@ -271,10 +278,25 @@ private fun DayPill(
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
+    val accessibleDescription = buildString {
+        append("$dayName ")
+        append("$dayNumber")
+        if (isToday) append(", today")
+        if (isSelected) append(", selected")
+        if (hasPlans) {
+            append(", planned ")
+            append(planTypes.joinToString(" and ") { it.label })
+        }
+    }
+
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .clickable(role = Role.Button, onClick = onClick)
+            .semantics {
+                contentDescription = accessibleDescription
+                this.selected = isSelected
+            }
             .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

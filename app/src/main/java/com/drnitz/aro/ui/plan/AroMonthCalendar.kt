@@ -33,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -117,22 +118,24 @@ fun AroMonthCalendar(
 
                 IconButton(
                     onClick = { onMonthChange(month.minusMonths(1)) },
-                    modifier = Modifier.size(34.dp),
+                    modifier = Modifier.size(48.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Default.ChevronLeft,
                         contentDescription = "Previous month",
                         tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp),
                     )
                 }
                 IconButton(
                     onClick = { onMonthChange(month.plusMonths(1)) },
-                    modifier = Modifier.size(34.dp),
+                    modifier = Modifier.size(48.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Default.ChevronRight,
                         contentDescription = "Next month",
                         tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp),
                     )
                 }
             }
@@ -262,7 +265,10 @@ private fun CalendarDayCell(
                 CircleShape,
             )
             .clickable(role = Role.Button, onClick = onClick)
-            .semantics { contentDescription = description },
+            .semantics {
+                contentDescription = description
+                this.selected = selected
+            },
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {

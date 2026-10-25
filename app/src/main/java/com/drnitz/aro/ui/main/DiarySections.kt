@@ -526,7 +526,7 @@ internal fun MealSlotCard(
                     Spacer(modifier = Modifier.width(4.dp))
                     IconButton(
                         onClick = onOpenAddFood,
-                        modifier = Modifier.size(28.dp),
+                        modifier = Modifier.size(48.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
@@ -609,7 +609,7 @@ internal fun MealSlotCard(
                                 Spacer(modifier = Modifier.width(4.dp))
                                 IconButton(
                                     onClick = { onDeleteFood(entry.id) },
-                                    modifier = Modifier.size(28.dp),
+                                    modifier = Modifier.size(48.dp),
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Delete,
@@ -728,7 +728,7 @@ internal fun WorkoutsCard(
                         if (onDuplicateWorkout != null) {
                             IconButton(
                                 onClick = { onDuplicateWorkout(workout) },
-                                modifier = Modifier.size(28.dp),
+                                modifier = Modifier.size(48.dp),
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.ContentCopy,
@@ -740,7 +740,7 @@ internal fun WorkoutsCard(
                         }
                         IconButton(
                             onClick = { onDeleteWorkout(workout.id) },
-                            modifier = Modifier.size(28.dp),
+                            modifier = Modifier.size(48.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
