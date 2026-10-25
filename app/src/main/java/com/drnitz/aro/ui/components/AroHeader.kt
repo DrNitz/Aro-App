@@ -120,7 +120,7 @@ fun AroHeader(
             if (onOpenAssistant != null) {
                 AroMascot(
                     mood = mascotMood,
-                    size = 34.dp,
+                    size = 42.dp,
                     onClick = onOpenAssistant,
                     modifier = Modifier.padding(end = 4.dp),
                 )

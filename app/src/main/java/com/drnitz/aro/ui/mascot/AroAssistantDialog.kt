@@ -122,34 +122,41 @@ fun AroAssistantDialog(
 
                 Spacer(Modifier.height(8.dp))
 
-                // Hero Animated Mascot
+                // Hero Animated Cartoon Mascot
                 AroMascot(
                     mood = mood,
-                    size = 76.dp,
-                    contentDescription = "Aro Interactive Bot",
+                    size = 92.dp,
+                    onClick = {
+                        // Playful bounce on tap
+                    },
+                    contentDescription = "Aro Interactive Cartoon Mascot",
                 )
 
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(8.dp))
 
-                // Mood Status Pill
+                // Cartoon Speech Pill
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(14.dp),
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     border = androidx.compose.foundation.BorderStroke(
                         0.75.dp,
                         MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
                     ),
-                    modifier = Modifier.clip(RoundedCornerShape(12.dp)),
+                    modifier = Modifier.clip(RoundedCornerShape(14.dp)),
                 ) {
-                    Text(
-                        text = mood.label,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 11.sp,
-                        ),
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "🐾 ${mood.shortGreeting}",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.5.sp,
+                            ),
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
                 }
 
                 Spacer(Modifier.height(16.dp))

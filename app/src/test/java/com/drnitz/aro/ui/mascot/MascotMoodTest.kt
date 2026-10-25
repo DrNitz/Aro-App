@@ -13,6 +13,7 @@ import com.drnitz.aro.domain.model.MealSlot
 import com.drnitz.aro.domain.model.NutrientKey
 import com.drnitz.aro.domain.model.NutrientTotals
 import com.drnitz.aro.domain.model.WorkoutLog
+import com.drnitz.aro.domain.model.WorkoutType
 import com.drnitz.aro.ui.main.MainScreenUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -140,26 +141,59 @@ class MascotMoodTest {
     }
 
     @Test
-    fun daytimeActiveProgressResolvesHappy() {
+    fun daytimeActiveProgressResolvesEatingHealthy() {
         val state = createSuccessState(
             meals = mapOf(MealSlot.BREAKFAST to listOf(Fixtures.chickenBreast())),
         )
         val mood = resolveMascotMood(state, currentHour = 11)
-        assertEquals(MascotMood.HAPPY, mood)
+        assertEquals(MascotMood.EATING_HEALTHY, mood)
 
         val coaching = getMascotCoaching(state, currentHour = 11)
-        assertEquals(MascotMood.HAPPY, coaching.mood)
-        assertTrue(coaching.title.contains("Steady Progress"))
+        assertEquals(MascotMood.EATING_HEALTHY, coaching.mood)
+        assertTrue(coaching.title.contains("Fueling"))
     }
 
     @Test
-    fun emptyDayNormalHoursResolvesIdle() {
-        val state = createSuccessState()
-        val mood = resolveMascotMood(state, currentHour = 9)
-        assertEquals(MascotMood.IDLE, mood)
+    fun workoutLoggedResolvesWorkoutBeast() {
+        val state = createSuccessState(
+            workouts = listOf(
+                WorkoutLog(
+                    id = "w1",
+                    type = WorkoutType.STRENGTH,
+                    exerciseName = "Bench Press",
+                    loggedAt = Instant.now(),
+                    met = 6.0,
+                    durationMinutes = 45,
+                ),
+            ),
+        )
+        val mood = resolveMascotMood(state, currentHour = 16)
+        assertEquals(MascotMood.WORKOUT_BEAST, mood)
 
-        val coaching = getMascotCoaching(state, currentHour = 9)
-        assertEquals(MascotMood.IDLE, coaching.mood)
-        assertTrue(coaching.title.contains("Aro Bot"))
+        val coaching = getMascotCoaching(state, currentHour = 16)
+        assertEquals(MascotMood.WORKOUT_BEAST, coaching.mood)
+        assertTrue(coaching.title.contains("Beast Mode"))
+    }
+
+    @Test
+    fun morningEmptyDayResolvesWelcoming() {
+        val state = createSuccessState()
+        val mood = resolveMascotMood(state, currentHour = 8)
+        assertEquals(MascotMood.WELCOMING, mood)
+
+        val coaching = getMascotCoaching(state, currentHour = 8)
+        assertEquals(MascotMood.WELCOMING, coaching.mood)
+        assertTrue(coaching.title.contains("Welcome"))
+    }
+
+    @Test
+    fun afternoonEmptyDayResolvesHangingCurious() {
+        val state = createSuccessState(targetWaterMl = 0) // No water deficit
+        val mood = resolveMascotMood(state, currentHour = 14)
+        assertEquals(MascotMood.HANGING_CURIOUS, mood)
+
+        val coaching = getMascotCoaching(state, currentHour = 14)
+        assertEquals(MascotMood.HANGING_CURIOUS, coaching.mood)
+        assertTrue(coaching.title.contains("Aro is Here to Help"))
     }
 }
