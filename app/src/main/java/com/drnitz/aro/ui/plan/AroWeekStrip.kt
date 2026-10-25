@@ -1,22 +1,24 @@
 package com.drnitz.aro.ui.plan
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -27,17 +29,15 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -45,13 +45,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -66,10 +66,10 @@ import java.time.temporal.WeekFields
 import java.util.Locale
 
 /**
- * Modern collapsible weekly calendar strip.
+ * Ultra-compact, sleek weekly calendar strip.
  *
- * Provides a fast, space-efficient single-week view for daily logging while allowing
- * instant 1-tap expansion to the full month grid.
+ * Provides a low-profile single-week view with modern capsule day pills,
+ * animated month dropdown, and horizontal week swiping.
  */
 @Composable
 fun AroWeekStrip(
@@ -82,6 +82,7 @@ fun AroWeekStrip(
     modifier: Modifier = Modifier,
 ) {
     var isExpanded by rememberSaveable { mutableStateOf(false) }
+    var dragAccumulator by remember { mutableFloatStateOf(0f) }
     val locale = Locale.getDefault()
     val weekStart = remember(locale) { WeekFields.of(locale).firstDayOfWeek }
     val currentWeekDates = remember(selectedDate, weekStart) {
@@ -93,7 +94,7 @@ fun AroWeekStrip(
     }
 
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ),
@@ -103,98 +104,143 @@ fun AroWeekStrip(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 10.dp),
+                .padding(horizontal = 8.dp, vertical = 8.dp),
         ) {
-            // Header Row: Month title + Expand chevron + Prev/Next buttons + Today jump
+            // Sleek Header Bar
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
+                // Month & Year selector chip
+                val chevronAngle by animateFloatAsState(
+                    targetValue = if (isExpanded) 180f else 0f,
+                    label = "chevronAngle",
+                )
                 Row(
                     modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 48.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .clickable(role = Role.Button) { isExpanded = !isExpanded }
-                        .padding(vertical = 4.dp, horizontal = 2.dp),
+                        .padding(horizontal = 6.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
                         imageVector = Icons.Default.CalendarMonth,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(16.dp),
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
                         text = monthLabel,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
-                    Spacer(Modifier.width(4.dp))
+                    Spacer(Modifier.width(3.dp))
                     Icon(
-                        imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                        contentDescription = if (isExpanded) "Collapse to week" else "Expand full month calendar",
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = if (isExpanded) "Collapse calendar" else "Expand calendar",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp),
+                        modifier = Modifier
+                            .size(18.dp)
+                            .rotate(chevronAngle),
                     )
                 }
 
-                if (selectedDate != today) {
-                    TextButton(
-                        onClick = {
-                            onSelectDate(today)
-                            onMonthChange(YearMonth.from(today))
-                        },
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                // Controls: Today jump + Prev / Next week
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    AnimatedVisibility(
+                        visible = selectedDate != today,
+                        enter = fadeIn() + expandHorizontally(),
+                        exit = fadeOut() + shrinkHorizontally(),
                     ) {
-                        Text(
-                            text = "Today",
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                        )
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .clickable(role = Role.Button) {
+                                    onSelectDate(today)
+                                    val newMonth = YearMonth.from(today)
+                                    if (newMonth != calendarMonth) {
+                                        onMonthChange(newMonth)
+                                    }
+                                },
+                        ) {
+                            Text(
+                                text = "Today",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp,
+                                ),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
+                            )
+                        }
                     }
-                }
 
-                IconButton(
-                    onClick = {
-                        val prevWeekDate = selectedDate.minusWeeks(1)
-                        onSelectDate(prevWeekDate)
-                        val newMonth = YearMonth.from(prevWeekDate)
-                        if (newMonth != calendarMonth) {
-                            onMonthChange(newMonth)
+                    // Prev week button
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f),
+                        modifier = Modifier
+                            .size(30.dp)
+                            .clip(CircleShape)
+                            .clickable(role = Role.Button) {
+                                val prevWeekDate = selectedDate.minusWeeks(1)
+                                onSelectDate(prevWeekDate)
+                                val newMonth = YearMonth.from(prevWeekDate)
+                                if (newMonth != calendarMonth) {
+                                    onMonthChange(newMonth)
+                                }
+                            },
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.ChevronLeft,
+                                contentDescription = "Previous week",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp),
+                            )
                         }
-                    },
-                    modifier = Modifier.size(48.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ChevronLeft,
-                        contentDescription = "Previous week",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp),
-                    )
-                }
+                    }
 
-                IconButton(
-                    onClick = {
-                        val nextWeekDate = selectedDate.plusWeeks(1)
-                        onSelectDate(nextWeekDate)
-                        val newMonth = YearMonth.from(nextWeekDate)
-                        if (newMonth != calendarMonth) {
-                            onMonthChange(newMonth)
+                    // Next week button
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f),
+                        modifier = Modifier
+                            .size(30.dp)
+                            .clip(CircleShape)
+                            .clickable(role = Role.Button) {
+                                val nextWeekDate = selectedDate.plusWeeks(1)
+                                onSelectDate(nextWeekDate)
+                                val newMonth = YearMonth.from(nextWeekDate)
+                                if (newMonth != calendarMonth) {
+                                    onMonthChange(newMonth)
+                                }
+                            },
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = "Next week",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp),
+                            )
                         }
-                    },
-                    modifier = Modifier.size(48.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ChevronRight,
-                        contentDescription = "Next week",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp),
-                    )
+                    }
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
 
             // Expandable full month view
             AnimatedVisibility(
@@ -211,7 +257,7 @@ fun AroWeekStrip(
                         onMonthChange = onMonthChange,
                         onDateClick = { clickedDate ->
                             onSelectDate(clickedDate)
-                            // Keep expanded or collapse on selection
+                            isExpanded = false
                         },
                     )
                     Spacer(Modifier.height(8.dp))
@@ -220,8 +266,36 @@ fun AroWeekStrip(
 
             // Compact 7-Day Single Row
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .pointerInput(selectedDate) {
+                        detectHorizontalDragGestures(
+                            onDragStart = { dragAccumulator = 0f },
+                            onHorizontalDrag = { _, dragAmount ->
+                                dragAccumulator += dragAmount
+                            },
+                            onDragEnd = {
+                                if (dragAccumulator > 60f) {
+                                    val prevWeekDate = selectedDate.minusWeeks(1)
+                                    onSelectDate(prevWeekDate)
+                                    val newMonth = YearMonth.from(prevWeekDate)
+                                    if (newMonth != calendarMonth) {
+                                        onMonthChange(newMonth)
+                                    }
+                                } else if (dragAccumulator < -60f) {
+                                    val nextWeekDate = selectedDate.plusWeeks(1)
+                                    onSelectDate(nextWeekDate)
+                                    val newMonth = YearMonth.from(nextWeekDate)
+                                    if (newMonth != calendarMonth) {
+                                        onMonthChange(newMonth)
+                                    }
+                                }
+                                dragAccumulator = 0f
+                            },
+                            onDragCancel = { dragAccumulator = 0f },
+                        )
+                    },
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 currentWeekDates.forEach { date ->
                     val isSelected = date == selectedDate
@@ -264,7 +338,8 @@ private fun DayPill(
 ) {
     val containerColor = when {
         isSelected -> MaterialTheme.colorScheme.primary
-        else -> Color.Transparent
+        isToday -> MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+        else -> MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.45f)
     }
 
     val contentColor = when {
@@ -274,8 +349,15 @@ private fun DayPill(
     }
 
     val labelColor = when {
-        isSelected -> MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.82f)
+        isSelected -> MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+        isToday -> MaterialTheme.colorScheme.primary
         else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    val borderStroke = when {
+        isSelected -> null
+        isToday -> BorderStroke(1.2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.8f))
+        else -> BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
     }
 
     val accessibleDescription = buildString {
@@ -289,77 +371,80 @@ private fun DayPill(
         }
     }
 
-    Column(
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = containerColor,
+        border = borderStroke,
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .height(56.dp)
+            .clip(RoundedCornerShape(14.dp))
             .clickable(role = Role.Button, onClick = onClick)
             .semantics {
                 contentDescription = accessibleDescription
                 this.selected = isSelected
-            }
-            .padding(vertical = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+            },
     ) {
-        Text(
-            text = dayName,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Medium),
-            color = labelColor,
-            maxLines = 1,
-            overflow = TextOverflow.Clip,
-        )
-
-        Spacer(Modifier.height(4.dp))
-
-        Box(
+        Column(
             modifier = Modifier
-                .size(34.dp)
-                .then(
-                    if (isSelected) {
-                        Modifier.background(containerColor, CircleShape)
-                    } else if (isToday) {
-                        Modifier.border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                    } else {
-                        Modifier
-                    }
-                ),
-            contentAlignment = Alignment.Center,
+                .fillMaxWidth()
+                .height(56.dp)
+                .padding(vertical = 5.dp, horizontal = 1.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
+                text = dayName.uppercase(),
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.4.sp,
+                ),
+                color = labelColor,
+                maxLines = 1,
+                overflow = TextOverflow.Clip,
+            )
+
+            Text(
                 text = dayNumber.toString(),
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Medium,
-                    fontSize = 14.sp,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontSize = 15.sp,
+                    fontWeight = if (isSelected || isToday) FontWeight.ExtraBold else FontWeight.Bold,
                 ),
                 color = contentColor,
+                maxLines = 1,
             )
-        }
 
-        Spacer(Modifier.height(3.dp))
-
-        // Plan indicator dots
-        Row(
-            modifier = Modifier.height(5.dp),
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (hasPlans) {
-                val dotColor = when {
-                    isSelected -> MaterialTheme.colorScheme.onPrimary
-                    planTypes.contains(PlanItemType.EXERCISE) -> AroTheme.macroColors.cardio
-                    planTypes.contains(PlanItemType.PILL) -> AroTheme.macroColors.clinicalOptimal
-                    planTypes.contains(PlanItemType.FOOD) -> AroTheme.macroColors.calories
-                    planTypes.contains(PlanItemType.WATER) -> AroTheme.macroColors.water
-                    planTypes.contains(PlanItemType.FASTING) -> AroTheme.macroColors.fasting
-                    else -> MaterialTheme.colorScheme.primary
+            // Micro plan indicator or today dot
+            Box(
+                modifier = Modifier
+                    .height(4.dp)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (hasPlans) {
+                    val dotColor = when {
+                        isSelected -> MaterialTheme.colorScheme.onPrimary
+                        planTypes.contains(PlanItemType.EXERCISE) -> AroTheme.macroColors.cardio
+                        planTypes.contains(PlanItemType.PILL) -> AroTheme.macroColors.clinicalOptimal
+                        planTypes.contains(PlanItemType.FOOD) -> AroTheme.macroColors.calories
+                        planTypes.contains(PlanItemType.WATER) -> AroTheme.macroColors.water
+                        planTypes.contains(PlanItemType.FASTING) -> AroTheme.macroColors.fasting
+                        else -> MaterialTheme.colorScheme.primary
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(4.dp)
+                            .background(dotColor, CircleShape),
+                    )
+                } else if (isToday && !isSelected) {
+                    Box(
+                        modifier = Modifier
+                            .size(3.dp)
+                            .background(MaterialTheme.colorScheme.primary, CircleShape),
+                    )
                 }
-                Box(
-                    modifier = Modifier
-                        .size(4.dp)
-                        .background(dotColor, CircleShape),
-                )
-            } else {
-                Spacer(Modifier.size(4.dp))
             }
         }
     }
 }
+
