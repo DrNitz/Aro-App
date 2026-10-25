@@ -122,14 +122,12 @@ fun AroAssistantDialog(
 
                 Spacer(Modifier.height(8.dp))
 
-                // Hero Animated Cartoon Mascot
+                // Hero Animated Finch Mascot
                 AroMascot(
                     mood = mood,
-                    size = 92.dp,
-                    onClick = {
-                        // Playful bounce on tap
-                    },
-                    contentDescription = "Aro Interactive Cartoon Mascot",
+                    size = 136.dp,
+                    isTopBar = false,
+                    contentDescription = "Aro Interactive Health Finch",
                 )
 
                 Spacer(Modifier.height(8.dp))
@@ -149,7 +147,7 @@ fun AroAssistantDialog(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "🐾 ${mood.shortGreeting}",
+                            text = "🐥 ${mood.shortGreeting}",
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 11.5.sp,

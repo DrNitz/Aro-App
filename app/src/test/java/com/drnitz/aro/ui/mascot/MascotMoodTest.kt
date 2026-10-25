@@ -196,4 +196,18 @@ class MascotMoodTest {
         assertEquals(MascotMood.HANGING_CURIOUS, coaching.mood)
         assertTrue(coaching.title.contains("Aro is Here to Help"))
     }
+
+    @Test
+    fun verifyMascotRawResMappings() {
+        assertEquals(com.drnitz.aro.R.raw.finch_peeking, getMascotRawRes(MascotMood.HANGING_CURIOUS, isTopBar = true))
+        assertEquals(com.drnitz.aro.R.raw.finch_idle_avatar, getMascotRawRes(MascotMood.HANGING_CURIOUS, isTopBar = false))
+        assertEquals(com.drnitz.aro.R.raw.finch_heart_hug, getMascotRawRes(MascotMood.WELCOMING))
+        assertEquals(com.drnitz.aro.R.raw.finch_lift_weight, getMascotRawRes(MascotMood.WORKOUT_BEAST))
+        assertEquals(com.drnitz.aro.R.raw.finch_nutrition_apple, getMascotRawRes(MascotMood.EATING_HEALTHY))
+        assertEquals(com.drnitz.aro.R.raw.finch_drink_water, getMascotRawRes(MascotMood.DRINKING_WATER))
+        assertEquals(com.drnitz.aro.R.raw.finch_drink_water, getMascotRawRes(MascotMood.THIRSTY))
+        assertEquals(com.drnitz.aro.R.raw.finch_celebrate, getMascotRawRes(MascotMood.CELEBRATING))
+        assertEquals(com.drnitz.aro.R.raw.finch_happy_float, getMascotRawRes(MascotMood.FASTING_ZEN))
+        assertEquals(com.drnitz.aro.R.raw.finch_sleep_cap, getMascotRawRes(MascotMood.SLEEPY))
+    }
 }

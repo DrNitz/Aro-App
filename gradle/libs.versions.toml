@@ -20,6 +20,7 @@ kotlinxSerialization = "1.8.0"
 camerax = "1.4.1"
 mlkitBarcode = "17.3.0"
 coil = "2.7.0"
+lottie = "6.6.2"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
@@ -59,6 +60,7 @@ androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", versi
 androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "camerax" }
 mlkit-barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "mlkitBarcode" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
+lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "lottie" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }

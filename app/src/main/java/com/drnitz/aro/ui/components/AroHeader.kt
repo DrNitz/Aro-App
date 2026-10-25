@@ -118,12 +118,19 @@ fun AroHeader(
             }
 
             if (onOpenAssistant != null) {
-                AroMascot(
-                    mood = mascotMood,
-                    size = 42.dp,
-                    onClick = onOpenAssistant,
-                    modifier = Modifier.padding(end = 4.dp),
-                )
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .padding(end = 2.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    AroMascot(
+                        mood = mascotMood,
+                        size = 46.dp,
+                        isTopBar = true,
+                        onClick = onOpenAssistant,
+                    )
+                }
             }
 
             IconButton(

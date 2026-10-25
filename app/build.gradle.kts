@@ -125,4 +125,7 @@ dependencies {
 
   // Coil — cached async food images
   implementation(libs.coil.compose)
+
+  // Lottie Compose — Vector character animations
+  implementation(libs.lottie.compose)
 }
