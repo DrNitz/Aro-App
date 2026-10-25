@@ -5,7 +5,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.drnitz.aro.MainActivity
@@ -44,62 +43,60 @@ object NotificationHelper {
     const val EXTRA_NOTIFICATION_ID = "extra_notification_id"
 
     fun createNotificationChannels(context: Context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationManager =
-                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-            // 1. Hydration Reminders Channel
-            val hydrationChannel = NotificationChannel(
-                CHANNEL_ID_HYDRATION,
-                "Hydration Reminders",
-                NotificationManager.IMPORTANCE_DEFAULT,
-            ).apply {
-                description = "Periodic reminders to log water and stay hydrated throughout the day."
-                enableVibration(true)
-                setShowBadge(true)
-                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
-            }
-
-            // 2. Intermittent Fasting Channel
-            val fastingChannel = NotificationChannel(
-                CHANNEL_ID_FASTING,
-                "Intermittent Fasting",
-                NotificationManager.IMPORTANCE_HIGH,
-            ).apply {
-                description = "Alerts when your fasting goal or metabolic stage is reached."
-                enableVibration(true)
-                setShowBadge(true)
-                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
-            }
-
-            // 3. Medication & Supplement Channel
-            val medicationChannel = NotificationChannel(
-                CHANNEL_ID_MEDICATION,
-                "Medications & Supplements",
-                NotificationManager.IMPORTANCE_HIGH,
-            ).apply {
-                description = "Timely alerts to take prescribed medications and supplements."
-                enableVibration(true)
-                setShowBadge(true)
-                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
-            }
-
-            // 4. Per-item planned food, exercise, and pill reminders
-            val plannedChannel = NotificationChannel(
-                CHANNEL_ID_PLAN,
-                "Planned reminders",
-                NotificationManager.IMPORTANCE_DEFAULT,
-            ).apply {
-                description = "Reminders for the meals, workouts, pills, fasts and water you planned in Aro."
-                enableVibration(true)
-                setShowBadge(true)
-                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
-            }
-
-            notificationManager.createNotificationChannels(
-                listOf(hydrationChannel, fastingChannel, medicationChannel, plannedChannel),
-            )
+        // 1. Hydration Reminders Channel
+        val hydrationChannel = NotificationChannel(
+            CHANNEL_ID_HYDRATION,
+            "Hydration Reminders",
+            NotificationManager.IMPORTANCE_DEFAULT,
+        ).apply {
+            description = "Periodic reminders to log water and stay hydrated throughout the day."
+            enableVibration(true)
+            setShowBadge(true)
+            lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
         }
+
+        // 2. Intermittent Fasting Channel
+        val fastingChannel = NotificationChannel(
+            CHANNEL_ID_FASTING,
+            "Intermittent Fasting",
+            NotificationManager.IMPORTANCE_HIGH,
+        ).apply {
+            description = "Alerts when your fasting goal or metabolic stage is reached."
+            enableVibration(true)
+            setShowBadge(true)
+            lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+        }
+
+        // 3. Medication & Supplement Channel
+        val medicationChannel = NotificationChannel(
+            CHANNEL_ID_MEDICATION,
+            "Medications & Supplements",
+            NotificationManager.IMPORTANCE_HIGH,
+        ).apply {
+            description = "Timely alerts to take prescribed medications and supplements."
+            enableVibration(true)
+            setShowBadge(true)
+            lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+        }
+
+        // 4. Per-item planned food, exercise, and pill reminders
+        val plannedChannel = NotificationChannel(
+            CHANNEL_ID_PLAN,
+            "Planned reminders",
+            NotificationManager.IMPORTANCE_DEFAULT,
+        ).apply {
+            description = "Reminders for the meals, workouts, pills, fasts and water you planned in Aro."
+            enableVibration(true)
+            setShowBadge(true)
+            lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+        }
+
+        notificationManager.createNotificationChannels(
+            listOf(hydrationChannel, fastingChannel, medicationChannel, plannedChannel),
+        )
     }
 
     fun showHydrationNotification(context: Context, id: Int = NOTIFICATION_ID_HYDRATION) {

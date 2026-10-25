@@ -129,8 +129,8 @@ import kotlin.math.roundToInt
 
 @Composable
 fun MainScreen(
-    onItemClick: (NavKey) -> Unit = {},
     modifier: Modifier = Modifier,
+    onItemClick: (NavKey) -> Unit = {},
     viewModel: MainScreenViewModel? = null,
     foodLibrary: OfflineFoodLibrary? = null,
     exerciseLibrary: OfflineExerciseLibrary? = null,
@@ -225,12 +225,13 @@ fun MainScreen(
                 onAddWater = vm::addWater,
                 onResetWater = vm::resetWater,
                 onStartFast = { hours ->
-                    vm.startFast(hours)
+                    val startedAt = Instant.now()
+                    vm.startFast(hours, startedAt)
                     scope.launch {
                         AroNotificationScheduler.scheduleFastingCompletion(
                             context,
                             hours,
-                            System.currentTimeMillis(),
+                            startedAt,
                         )
                     }
                 },
@@ -270,6 +271,7 @@ private enum class AroTab(val label: String, val icon: ImageVector) {
 @Composable
 internal fun MainScreenContent(
     state: MainScreenUiState.Success,
+    modifier: Modifier = Modifier,
     planState: PlanUiState = PlanUiState.Loading,
     planDeepLink: PlanDeepLink? = null,
     onPlanDeepLinkHandled: (Long) -> Unit = {},
@@ -297,7 +299,6 @@ internal fun MainScreenContent(
     onUncompletePlanOccurrence: (String, LocalDate) -> Unit = { _, _ -> },
     onLoadPreviousWorkout: (suspend (String) -> WorkoutLog?)? = null,
     onItemClick: (NavKey) -> Unit = {},
-    modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var showPlanView by rememberSaveable { mutableStateOf(false) }
@@ -543,6 +544,7 @@ private fun MissingLibrary(message: String) {
 @Composable
 private fun DiaryTabContent(
     state: MainScreenUiState.Success,
+    modifier: Modifier = Modifier,
     planState: PlanUiState = PlanUiState.Loading,
     foodLibrary: OfflineFoodLibrary? = null,
     exerciseLibrary: OfflineExerciseLibrary? = null,
@@ -565,7 +567,6 @@ private fun DiaryTabContent(
     onOpenNotifications: () -> Unit = {},
     onLoadPreviousWorkout: (suspend (String) -> WorkoutLog?)? = null,
     onItemClick: (NavKey) -> Unit = {},
-    modifier: Modifier = Modifier,
 ) {
     var addFoodSlot by remember { mutableStateOf<MealSlot?>(null) }
     var editingFood by remember { mutableStateOf<FoodLogEntry?>(null) }

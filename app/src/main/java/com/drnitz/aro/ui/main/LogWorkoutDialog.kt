@@ -59,6 +59,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -235,7 +236,7 @@ internal fun LogWorkoutDialog(
         sensorManager?.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
     }
     var isTracking by remember { mutableStateOf(false) }
-    var trackingStartedAtElapsed by remember { mutableStateOf(0L) }
+    var trackingStartedAtElapsed by remember { mutableLongStateOf(0L) }
     var trackingElapsedSeconds by remember { mutableIntStateOf(0) }
     var trackedSteps by remember { mutableIntStateOf(0) }
     var stepCounterBaseline by remember { mutableStateOf<Float?>(null) }

@@ -110,10 +110,10 @@ import kotlin.math.roundToInt
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BodyPlannerScreen(
+    modifier: Modifier = Modifier,
     initialTab: Int = 0,
     onBack: () -> Unit = {},
     viewModel: BodyPlannerViewModel? = null,
-    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val vm: BodyPlannerViewModel = viewModel ?: run {

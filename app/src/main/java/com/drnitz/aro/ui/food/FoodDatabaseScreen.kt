@@ -103,16 +103,16 @@ fun FoodDatabaseScreen(
     foodLibrary: OfflineFoodLibrary,
     favoriteFoods: List<CuratedFoodItem>,
     recentFoods: List<CuratedFoodItem>,
-    openFoodFactsClient: OpenFoodFactsClient? = null,
     selectedDate: LocalDate,
     formattedDate: String,
     isToday: Boolean,
-    isPlanning: Boolean = false,
     onSelectDate: (LocalDate) -> Unit,
     onToday: () -> Unit,
     onFoodLogged: (FoodLogEntry, CuratedFoodItem) -> Unit,
     onToggleFavorite: (CuratedFoodItem) -> Unit,
     modifier: Modifier = Modifier,
+    openFoodFactsClient: OpenFoodFactsClient? = null,
+    isPlanning: Boolean = false,
 ) {
     var query by remember { mutableStateOf("") }
     var source by remember { mutableStateOf(FoodSource.OFFLINE) }

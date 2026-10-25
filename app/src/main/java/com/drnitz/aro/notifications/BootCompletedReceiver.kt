@@ -42,11 +42,10 @@ class BootCompletedReceiver : BroadcastReceiver() {
                 // 4. Check for active fast and reschedule completion alarm
                 val activeFast = repository.observeActiveFast().first()
                 if (activeFast != null) {
-                    val startedMillis = activeFast.startedAt.toEpochMilli()
                     AroNotificationScheduler.scheduleFastingCompletion(
                         context,
                         activeFast.targetHours,
-                        startedMillis,
+                        activeFast.startedAt,
                     )
                 }
 

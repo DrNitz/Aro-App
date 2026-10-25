@@ -37,6 +37,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -250,9 +251,9 @@ class MainScreenViewModel(
         }
     }
 
-    fun startFast(targetHours: Int = 16) {
+    fun startFast(targetHours: Int = 16, startedAt: Instant = Instant.now()) {
         viewModelScope.launch {
-            repository.startFast(targetHours)
+            repository.startFast(targetHours, startedAt)
         }
     }
 

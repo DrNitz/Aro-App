@@ -86,12 +86,8 @@ fun PlanTabScreen(
     planState: PlanUiState,
     foodLibrary: OfflineFoodLibrary?,
     exerciseLibrary: OfflineExerciseLibrary?,
-    openFoodFactsClient: OpenFoodFactsClient? = null,
-    onBack: () -> Unit = {},
     onSelectDate: (LocalDate) -> Unit,
     onToday: () -> Unit,
-    onPlanFoodInFoodTab: () -> Unit = {},
-    onPlanExerciseInWorkoutTab: () -> Unit = {},
     onSavePlanItem: (PlanItem) -> Unit,
     onDeletePlanItem: (String) -> Unit,
     onCompletePlanOccurrence: (String, LocalDate, String?) -> Unit,
@@ -102,6 +98,10 @@ fun PlanTabScreen(
     onStartFast: (Int) -> Unit,
     onLogWorkout: (WorkoutLog) -> Unit,
     modifier: Modifier = Modifier,
+    openFoodFactsClient: OpenFoodFactsClient? = null,
+    onBack: () -> Unit = {},
+    onPlanFoodInFoodTab: () -> Unit = {},
+    onPlanExerciseInWorkoutTab: () -> Unit = {},
 ) {
     val planSuccess = (planState as? PlanUiState.Success)
         ?.takeIf { it.selectedDate == state.selectedDate }

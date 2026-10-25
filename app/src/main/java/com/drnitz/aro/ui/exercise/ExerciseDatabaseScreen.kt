@@ -144,17 +144,17 @@ private val QUICK_CARDIO = listOf(
 fun ExerciseDatabaseScreen(
     exerciseLibrary: OfflineExerciseLibrary,
     userWeightKg: Double,
-    userHeightCm: Double = 170.0,
     selectedDate: LocalDate,
     formattedDate: String,
     isToday: Boolean,
-    isPlanning: Boolean = false,
     onSelectDate: (LocalDate) -> Unit,
     onToday: () -> Unit,
     onWorkoutLogged: (WorkoutLog) -> Unit,
+    modifier: Modifier = Modifier,
+    userHeightCm: Double = 170.0,
+    isPlanning: Boolean = false,
     onExercisePlanned: (Exercise) -> Unit = {},
     onLoadPreviousWorkout: (suspend (String) -> WorkoutLog?)? = null,
-    modifier: Modifier = Modifier,
 ) {
     var allExercises by remember { mutableStateOf<List<Exercise>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }

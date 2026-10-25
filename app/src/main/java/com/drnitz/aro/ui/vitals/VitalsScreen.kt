@@ -90,9 +90,9 @@ import java.util.Locale
 
 @Composable
 fun VitalsScreen(
+    modifier: Modifier = Modifier,
     initialTab: Int = 0,
     onBack: () -> Unit = {},
-    modifier: Modifier = Modifier,
     repository: AroRepository? = null,
 ) {
     val context = LocalContext.current

@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import com.drnitz.aro.domain.model.MedicationReminder
+import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -114,6 +115,10 @@ object AroNotificationScheduler {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         alarmManager.cancel(pendingIntent)
+    }
+
+    suspend fun scheduleFastingCompletion(context: Context, targetHours: Int, startedAt: Instant) {
+        scheduleFastingCompletion(context, targetHours, startedAt.toEpochMilli())
     }
 
     suspend fun scheduleFastingCompletion(context: Context, targetHours: Int, startedAtMillis: Long) {
