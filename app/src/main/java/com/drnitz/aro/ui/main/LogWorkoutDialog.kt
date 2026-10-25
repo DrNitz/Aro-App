@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
@@ -73,6 +74,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -93,6 +95,7 @@ import com.drnitz.aro.domain.model.WorkoutType
 import com.drnitz.aro.theme.AroTheme
 import com.drnitz.aro.ui.components.AroDialogSurface
 import com.drnitz.aro.ui.components.AroLoggingDateLabel
+import com.drnitz.aro.ui.components.CollapsibleSection
 import com.drnitz.aro.ui.components.ExerciseImage
 import com.drnitz.aro.ui.workout.GymRestTimerCard
 import com.drnitz.aro.ui.workout.PlateCalculatorDialog
@@ -506,26 +509,26 @@ internal fun LogWorkoutDialog(
                                 .weight(1f),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            val postureUrls = ex.imageUrls(limit = 2)
-                            if (postureUrls.isNotEmpty()) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    postureUrls.forEachIndexed { index, url ->
-                                        ExerciseImage(
-                                            imageUrl = url,
-                                            contentDescription = "${ex.name} posture ${index + 1}",
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .height(96.dp),
-                                            cornerRadius = 12.dp,
-                                        )
-                                    }
+                            val prevSets = previousWorkout?.sets.orEmpty()
+                            val prevSummary = prevSets.joinToString("  •  ") {
+                                "${it.weightKg.roundToInt()}kg × ${it.reps}"
+                            }
+                            val prevTrailing: (@Composable () -> Unit)? = if (prevSets.isNotEmpty()) {
+                                {
+                                    Text(
+                                        text = prevSummary,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.widthIn(max = 120.dp),
+                                    )
                                 }
+                            } else {
+                                null
                             }
 
-                            // Exercise summary banner
+                            // Exercise summary banner (identity stays pinned up top)
                             Card(
                                 shape = RoundedCornerShape(14.dp),
                                 colors = CardDefaults.cardColors(
@@ -548,9 +551,34 @@ internal fun LogWorkoutDialog(
                                 }
                             }
 
-                            // Last Performance Record (Previous Session)
-                            previousWorkout?.let { prev ->
-                                if (prev.sets.isNotEmpty()) {
+                            // Form reference & previous session; collapsed by default so
+                            // the working sets are visible without scrolling past them.
+                            CollapsibleSection(
+                                title = "Form & last session",
+                                initiallyExpanded = false,
+                                trailing = prevTrailing,
+                            ) {
+                                val postureUrls = ex.imageUrls(limit = 2)
+                                if (postureUrls.isNotEmpty()) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    ) {
+                                        postureUrls.forEachIndexed { index, url ->
+                                            ExerciseImage(
+                                                imageUrl = url,
+                                                contentDescription = "${ex.name} posture ${index + 1}",
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .height(96.dp),
+                                                cornerRadius = 12.dp,
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // Last Performance Record (Previous Session)
+                                if (prevSets.isNotEmpty()) {
                                     Card(
                                         shape = RoundedCornerShape(12.dp),
                                         colors = CardDefaults.cardColors(
@@ -574,9 +602,6 @@ internal fun LogWorkoutDialog(
                                                     ),
                                                     color = MaterialTheme.colorScheme.primary,
                                                 )
-                                                val prevSummary = prev.sets.joinToString("  •  ") {
-                                                    "${it.weightKg.roundToInt()}kg × ${it.reps}"
-                                                }
                                                 Text(
                                                     text = prevSummary,
                                                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
@@ -587,7 +612,7 @@ internal fun LogWorkoutDialog(
                                             OutlinedButton(
                                                 onClick = {
                                                     sets.clear()
-                                                    sets.addAll(prev.sets.map { it.copy(isCompleted = false) })
+                                                    sets.addAll(prevSets.map { it.copy(isCompleted = false) })
                                                 },
                                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                                                 shape = RoundedCornerShape(8.dp),
@@ -605,87 +630,6 @@ internal fun LogWorkoutDialog(
                                     }
                                 }
                             }
-
-                            // Clinical Metrics Strip
-                            Card(
-                                shape = RoundedCornerShape(14.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                ),
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                Column(modifier = Modifier.padding(12.dp)) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceAround,
-                                    ) {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Text(
-                                                text = "Volume Tonnage",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            )
-                                            Text(
-                                                text = "${sessionTonnage.roundToInt()} kg",
-                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                                color = MaterialTheme.colorScheme.onSurface,
-                                            )
-                                        }
-
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Text(
-                                                text = "Est. 1RM",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            )
-                                            Text(
-                                                text = if (best1Rm != null) "${best1Rm.oneRepMaxKg.roundToInt()} kg" else "—",
-                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                                color = AroTheme.macroColors.calories,
-                                            )
-                                        }
-
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Text(
-                                                text = "Est. Burn",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            )
-                                            Text(
-                                                text = "+$estBurn kcal",
-                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                                color = AroTheme.macroColors.cardio,
-                                            )
-                                        }
-                                    }
-
-                                    if (best1Rm != null) {
-                                        Spacer(modifier = Modifier.height(6.dp))
-                                        Text(
-                                            text = "Formula: ${best1Rm.method.label}",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.align(Alignment.CenterHorizontally),
-                                        )
-                                        if (!best1Rm.isReliable && best1Rm.caveat != null) {
-                                            Spacer(modifier = Modifier.height(2.dp))
-                                            Text(
-                                                text = "⚠️ ${best1Rm.caveat}",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = AroTheme.macroColors.clinicalModerate,
-                                                textAlign = TextAlign.Center,
-                                                modifier = Modifier.fillMaxWidth(),
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Interactive Rest Timer Card
-                            GymRestTimerCard(
-                                timerState = restTimer,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
 
                             // Sets Table Header
                             Row(
@@ -952,6 +896,94 @@ internal fun LogWorkoutDialog(
                                 }
                             }
 
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // Pinned summary zone: timer, live totals, save.
+                            CollapsibleSection(
+                                title = "Rest timer",
+                                initiallyExpanded = false,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                GymRestTimerCard(
+                                    timerState = restTimer,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+
+                            // Clinical Metrics Strip
+                            Card(
+                                shape = RoundedCornerShape(14.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                ),
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceAround,
+                                    ) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = "Volume Tonnage",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                            Text(
+                                                text = "${sessionTonnage.roundToInt()} kg",
+                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                                color = MaterialTheme.colorScheme.onSurface,
+                                            )
+                                        }
+
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = "Est. 1RM",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                            Text(
+                                                text = if (best1Rm != null) "${best1Rm.oneRepMaxKg.roundToInt()} kg" else "—",
+                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                                color = AroTheme.macroColors.calories,
+                                            )
+                                        }
+
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = "Est. Burn",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                            Text(
+                                                text = "+$estBurn kcal",
+                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                                color = AroTheme.macroColors.cardio,
+                                            )
+                                        }
+                                    }
+
+                                    if (best1Rm != null) {
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Text(
+                                            text = "Formula: ${best1Rm.method.label}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.align(Alignment.CenterHorizontally),
+                                        )
+                                        if (!best1Rm.isReliable && best1Rm.caveat != null) {
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = "⚠️ ${best1Rm.caveat}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = AroTheme.macroColors.clinicalModerate,
+                                                textAlign = TextAlign.Center,
+                                                modifier = Modifier.fillMaxWidth(),
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                             // Save Button
                             Button(
                                 onClick = {
@@ -1123,6 +1155,7 @@ internal fun LogWorkoutDialog(
                         ) {
                             Column(
                                 modifier = Modifier
+
                                     .fillMaxWidth()
                                     .weight(1f)
                                     .verticalScroll(rememberScrollState()),
@@ -1376,70 +1409,73 @@ internal fun LogWorkoutDialog(
                                     }
                                 }
 
-                                // Clinical Calorie Burn Summary
-                                Card(
-                                    shape = RoundedCornerShape(14.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                    ),
-                                    modifier = Modifier.fillMaxWidth(),
-                                ) {
-                                    Column(modifier = Modifier.padding(14.dp)) {
-                                        Text(
-                                            text = "CALORIC EXPENDITURE",
-                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                        Spacer(modifier = Modifier.height(10.dp))
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceAround,
-                                        ) {
-                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                Text(
-                                                    text = "Duration",
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                )
-                                                Text(
-                                                    text = "$duration min",
-                                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                                    color = MaterialTheme.colorScheme.onSurface,
-                                                )
-                                            }
-                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                Text(
-                                                    text = "MET Intensity",
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                )
-                                                Text(
-                                                    text = "${act.met}",
-                                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                                    color = AroTheme.macroColors.calories,
-                                                )
-                                            }
-                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                Text(
-                                                    text = "Calories Burned",
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                )
-                                                Text(
-                                                    text = "+$burn kcal",
-                                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                                    color = AroTheme.macroColors.cardio,
-                                                )
-                                            }
+
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+                            // Clinical Calorie Burn Summary
+                            Card(
+                                shape = RoundedCornerShape(14.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                ),
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Column(modifier = Modifier.padding(14.dp)) {
+                                    Text(
+                                        text = "CALORIC EXPENDITURE",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceAround,
+                                    ) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = "Duration",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                            Text(
+                                                text = "$duration min",
+                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                                color = MaterialTheme.colorScheme.onSurface,
+                                            )
                                         }
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Text(
-                                            text = "Calculated for body weight: ${userWeightKg.roundToInt()} kg",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.align(Alignment.CenterHorizontally),
-                                        )
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = "MET Intensity",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                            Text(
+                                                text = "${act.met}",
+                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                                color = AroTheme.macroColors.calories,
+                                            )
+                                        }
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = "Calories Burned",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                            Text(
+                                                text = "+$burn kcal",
+                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                                color = AroTheme.macroColors.cardio,
+                                            )
+                                        }
                                     }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "Calculated for body weight: ${userWeightKg.roundToInt()} kg",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                                    )
                                 }
                             }
 
