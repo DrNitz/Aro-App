@@ -26,11 +26,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.drnitz.aro.R
 
 /**
  * A collapsible section with a tappable title row.
@@ -58,13 +60,16 @@ fun CollapsibleSection(
 ) {
     var expanded by rememberSaveable { mutableStateOf(initiallyExpanded) }
 
+    val stateExpandedText = stringResource(R.string.state_expanded)
+    val stateCollapsedText = stringResource(R.string.state_collapsed)
+
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 48.dp)
                 .semantics {
-                    stateDescription = if (expanded) "Expanded" else "Collapsed"
+                    stateDescription = if (expanded) stateExpandedText else stateCollapsedText
                 }
                 .clickable(role = Role.Button) { expanded = !expanded },
             verticalAlignment = Alignment.CenterVertically,

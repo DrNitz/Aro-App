@@ -39,12 +39,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation3.runtime.NavKey
 import com.drnitz.aro.ClinicalAudit
 import com.drnitz.aro.IntakeHistory
+import com.drnitz.aro.R
 import com.drnitz.aro.domain.calculation.EnergyPlan
 import com.drnitz.aro.domain.calculation.OneRepMaxCalculator
 import com.drnitz.aro.domain.clinical.MealCoverage
@@ -58,6 +60,14 @@ import com.drnitz.aro.ui.components.ConcentricMacroRings
 import com.drnitz.aro.domain.calculation.caloriesBurned
 import java.util.Locale
 import kotlin.math.roundToInt
+
+@Composable
+private fun MealSlot.localizedName(): String = when (this) {
+    MealSlot.BREAKFAST -> stringResource(R.string.meal_breakfast)
+    MealSlot.LUNCH -> stringResource(R.string.meal_lunch)
+    MealSlot.DINNER -> stringResource(R.string.meal_dinner)
+    MealSlot.SNACKS -> stringResource(R.string.meal_snacks)
+}
 
 @Composable
 internal fun DiarySections(
@@ -86,7 +96,7 @@ internal fun DiarySections(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "DIARY",
+                    text = stringResource(R.string.diary_header_label),
                     style = MaterialTheme.typography.labelSmall.copy(
                         letterSpacing = 1.2.sp,
                         fontWeight = FontWeight.SemiBold,
@@ -104,7 +114,7 @@ internal fun DiarySections(
                     onClick = onToday,
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                 ) {
-                    Text("Today")
+                    Text(stringResource(R.string.btn_today))
                 }
             }
         }
@@ -154,7 +164,7 @@ internal fun DiarySections(
         }
 
         Text(
-            text = "MEALS & NUTRITION",
+            text = stringResource(R.string.section_meals_nutrition),
             style = MaterialTheme.typography.labelMedium.copy(
                 letterSpacing = 1.2.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -188,7 +198,7 @@ internal fun DiarySections(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "WORKOUTS & EXPENDITURE",
+                    text = stringResource(R.string.section_workouts_expenditure),
                     style = MaterialTheme.typography.labelMedium.copy(
                         letterSpacing = 1.2.sp,
                         fontWeight = FontWeight.SemiBold,
@@ -203,7 +213,7 @@ internal fun DiarySections(
                         shape = RoundedCornerShape(12.dp),
                     ) {
                         Text(
-                            text = "+$totalBurn kcal",
+                            text = stringResource(R.string.kcal_burned_plus, totalBurn),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = AroTheme.macroColors.cardio,
@@ -221,7 +231,7 @@ internal fun DiarySections(
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = if (planningMode) "Plan Workout" else "Log Workout",
+                    text = stringResource(if (planningMode) R.string.btn_plan_workout else R.string.btn_log_workout),
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                 )
             }
@@ -259,15 +269,19 @@ internal fun DiarySections(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = if (planningMode) "Nothing planned for this day" else "No workouts logged today",
+                            text = if (planningMode) {
+                                stringResource(R.string.workouts_empty_plan)
+                            } else {
+                                stringResource(R.string.workouts_empty_today)
+                            },
                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
                             text = if (planningMode) {
-                                "Add a future workout plan; it will appear in the Plan view"
+                                stringResource(R.string.workouts_empty_plan_hint)
                             } else {
-                                "Track resistance (1RM & tonnage) or cardio (MET)"
+                                stringResource(R.string.workouts_empty_today_hint)
                             },
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -275,7 +289,7 @@ internal fun DiarySections(
                     }
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = if (planningMode) "Plan workout" else "Log workout",
+                        contentDescription = stringResource(if (planningMode) R.string.cd_plan_workout else R.string.cd_log_workout),
                         tint = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -329,28 +343,28 @@ internal fun MacroRingsCard(
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
                 MacroBadge(
-                    label = "Protein",
+                    label = stringResource(R.string.macro_protein),
                     amount = "${dayTotals.proteinG.roundToInt()}g",
                     target = "${energyPlan.macros.proteinG}g",
                     color = AroTheme.macroColors.protein,
                     fraction = (dayTotals.proteinG / energyPlan.macros.proteinG.coerceAtLeast(1)).toFloat(),
                 )
                 MacroBadge(
-                    label = "Carbs",
+                    label = stringResource(R.string.macro_carbs),
                     amount = "${dayTotals.carbsG.roundToInt()}g",
                     target = "${energyPlan.macros.carbsG}g",
                     color = AroTheme.macroColors.carbs,
                     fraction = (dayTotals.carbsG / energyPlan.macros.carbsG.coerceAtLeast(1)).toFloat(),
                 )
                 MacroBadge(
-                    label = "Fat",
+                    label = stringResource(R.string.macro_fat),
                     amount = "${dayTotals.fatG.roundToInt()}g",
                     target = "${energyPlan.macros.fatG}g",
                     color = AroTheme.macroColors.fat,
                     fraction = (dayTotals.fatG / energyPlan.macros.fatG.coerceAtLeast(1)).toFloat(),
                 )
                 MacroBadge(
-                    label = "Fiber",
+                    label = stringResource(R.string.macro_fiber),
                     amount = "${dayTotals.fiberG.roundToInt()}g",
                     target = "${energyPlan.macros.fiberG}g",
                     color = AroTheme.macroColors.fiber,
@@ -379,7 +393,7 @@ internal fun MacroRingsCard(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Clinical Electrolyte & Na:K Audit",
+                        text = stringResource(R.string.clinical_audit_card_title),
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                         color = MaterialTheme.colorScheme.onSurface,
                     )
@@ -413,7 +427,7 @@ internal fun EnergyBalanceCard(balance: EnergyBalance) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             EquationItem(
-                label = "Goal",
+                label = stringResource(R.string.energy_goal),
                 value = "${balance.targetCalories}",
                 color = MaterialTheme.colorScheme.onSurface,
             )
@@ -423,7 +437,7 @@ internal fun EnergyBalanceCard(balance: EnergyBalance) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             EquationItem(
-                label = "Eaten",
+                label = stringResource(R.string.energy_eaten),
                 value = "${balance.caloriesEaten}",
                 color = AroTheme.macroColors.calories,
             )
@@ -433,7 +447,7 @@ internal fun EnergyBalanceCard(balance: EnergyBalance) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             EquationItem(
-                label = "Burned",
+                label = stringResource(R.string.energy_burned),
                 value = "${balance.caloriesBurned}",
                 color = AroTheme.macroColors.cardio,
             )
@@ -443,7 +457,7 @@ internal fun EnergyBalanceCard(balance: EnergyBalance) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             EquationItem(
-                label = if (balance.isOverTarget) "Surplus" else "Remaining",
+                label = stringResource(if (balance.isOverTarget) R.string.energy_surplus else R.string.energy_remaining),
                 value = if (balance.isOverTarget) "+${balance.surplus}" else "${balance.remaining}",
                 color = if (balance.isOverTarget) AroTheme.macroColors.calories else AroTheme.macroColors.calories,
                 isHighlight = true,
@@ -511,7 +525,7 @@ internal fun MealSlotCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = slot.label,
+                        text = slot.localizedName(),
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface,
                     )
@@ -530,11 +544,10 @@ internal fun MealSlotCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = if (planningMode) {
-                                "Plan food for ${slot.label}"
-                            } else {
-                                "Add food to ${slot.label}"
-                            },
+                            contentDescription = stringResource(
+                                if (planningMode) R.string.cd_plan_food_slot else R.string.cd_add_food_slot,
+                                slot.localizedName(),
+                            ),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(18.dp),
                         )
@@ -557,13 +570,16 @@ internal fun MealSlotCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Info,
-                        contentDescription = "Missing macro alert",
+                        contentDescription = stringResource(R.string.cd_missing_macro_alert),
                         tint = AroTheme.macroColors.clinicalModerate,
                         modifier = Modifier.size(14.dp),
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Missing: " + mealCoverage.missingMacros.joinToString(", ") { it.label },
+                        text = stringResource(
+                            R.string.missing_macros_prefix,
+                            mealCoverage.missingMacros.joinToString(", ") { it.label },
+                        ),
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
                         color = AroTheme.macroColors.clinicalModerate,
                     )
@@ -613,7 +629,7 @@ internal fun MealSlotCard(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Delete,
-                                        contentDescription = "Delete item",
+                                        contentDescription = stringResource(R.string.cd_delete_item),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                         modifier = Modifier.size(16.dp),
                                     )
@@ -637,11 +653,10 @@ internal fun MealSlotCard(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = if (planningMode) {
-                            "Plan Food for ${slot.label}"
-                        } else {
-                            "Add Food to ${slot.label}"
-                        },
+                        text = stringResource(
+                            if (planningMode) R.string.btn_plan_food_slot else R.string.btn_add_food_slot,
+                            slot.localizedName(),
+                        ),
                         style = MaterialTheme.typography.labelMedium,
                     )
                 }
@@ -732,7 +747,7 @@ internal fun WorkoutsCard(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.ContentCopy,
-                                    contentDescription = "Duplicate workout",
+                                    contentDescription = stringResource(R.string.cd_duplicate_workout),
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(16.dp),
                                 )
@@ -744,7 +759,7 @@ internal fun WorkoutsCard(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
-                                contentDescription = "Delete workout",
+                                contentDescription = stringResource(R.string.cd_delete_workout),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                 modifier = Modifier.size(16.dp),
                             )
@@ -785,7 +800,7 @@ internal fun MacroBadge(
             color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
-            text = "of $target",
+            text = stringResource(R.string.macro_of_target, target),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
         )

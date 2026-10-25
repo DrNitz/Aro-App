@@ -39,9 +39,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.drnitz.aro.R
 import com.drnitz.aro.theme.AroTheme
 import kotlin.math.roundToInt
 
@@ -80,7 +82,7 @@ internal fun HydrationWidget(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = if (planningMode) "Hydration plan" else "Hydration",
+                    text = stringResource(if (planningMode) R.string.hydration_plan_title else R.string.hydration_title),
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f),
@@ -91,7 +93,7 @@ internal fun HydrationWidget(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Notifications,
-                        contentDescription = "Hydration Reminders",
+                        contentDescription = stringResource(R.string.cd_hydration_reminders),
                         tint = AroTheme.macroColors.water.copy(alpha = 0.7f),
                         modifier = Modifier.size(13.dp),
                     )
@@ -110,9 +112,9 @@ internal fun HydrationWidget(
             ) {
                 Text(
                     text = if (planningMode) {
-                        "$shownWaterMl / $targetWaterMl mL planned"
+                        stringResource(R.string.hydration_planned_ml, shownWaterMl, targetWaterMl)
                     } else {
-                        "$waterMl / $targetWaterMl mL"
+                        stringResource(R.string.hydration_progress_ml, waterMl, targetWaterMl)
                     },
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface,
@@ -126,16 +128,16 @@ internal fun HydrationWidget(
             }
             if (planningMode && shownWaterMl > 0) {
                 Text(
-                    text = "Not logged",
+                    text = stringResource(R.string.hydration_not_logged),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else if (!planningMode && waterLogCount > 0) {
                 Text(
                     text = if (waterLogCount == 1) {
-                        "1 drink logged"
+                        stringResource(R.string.hydration_one_drink_logged)
                     } else {
-                        "$waterLogCount drinks logged"
+                        stringResource(R.string.hydration_multiple_drinks_logged, waterLogCount)
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -188,7 +190,7 @@ internal fun HydrationWidget(
                         .weight(0.9f)
                         .height(30.dp),
                 ) {
-                    Text("More", style = MaterialTheme.typography.labelSmall)
+                    Text(stringResource(R.string.hydration_more), style = MaterialTheme.typography.labelSmall)
                 }
             }
 
@@ -215,7 +217,7 @@ internal fun HydrationWidget(
                         modifier = Modifier.size(13.dp),
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("View water log", style = MaterialTheme.typography.labelSmall)
+                    Text(stringResource(R.string.hydration_btn_view_log), style = MaterialTheme.typography.labelSmall)
                 }
                 if (!planningMode && waterMl > 0) {
                     IconButton(
@@ -224,7 +226,7 @@ internal fun HydrationWidget(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = "Reset Water",
+                            contentDescription = stringResource(R.string.cd_reset_water),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             modifier = Modifier.size(14.dp),
                         )
@@ -248,7 +250,7 @@ internal fun CustomHydrationDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = if (planningMode) "Plan Water" else "Log Water",
+                text = stringResource(if (planningMode) R.string.hydration_dialog_plan_title else R.string.hydration_dialog_log_title),
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             )
         },
@@ -256,7 +258,7 @@ internal fun CustomHydrationDialog(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (planningMode) {
                     Text(
-                        text = "Adds a water plan to this future day. It will not count as drunk water until you confirm it.",
+                        text = stringResource(R.string.hydration_dialog_plan_subtitle),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -268,7 +270,7 @@ internal fun CustomHydrationDialog(
                             mlText = input
                         }
                     },
-                    label = { Text("Volume (mL)") },
+                    label = { Text(stringResource(R.string.hydration_volume_label)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
@@ -294,7 +296,7 @@ internal fun CustomHydrationDialog(
                 }
 
                 Text(
-                    text = "Maintains plasma volume, renal clearance, and lipolysis during workouts and fasting.",
+                    text = stringResource(R.string.hydration_dialog_clinical_note),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -308,12 +310,12 @@ internal fun CustomHydrationDialog(
                 },
                 shape = RoundedCornerShape(10.dp),
             ) {
-                Text(if (planningMode) "Add Water to Plan" else "Add Water")
+                Text(stringResource(if (planningMode) R.string.hydration_btn_add_to_plan else R.string.hydration_btn_add_water))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss, shape = RoundedCornerShape(10.dp)) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         },
     )

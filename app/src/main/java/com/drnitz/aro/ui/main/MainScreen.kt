@@ -1,6 +1,8 @@
 package com.drnitz.aro.ui.main
 
 import android.content.Context
+import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -53,7 +55,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -67,6 +68,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -83,6 +85,7 @@ import com.drnitz.aro.ClinicalRecords
 import com.drnitz.aro.DataManagement
 import com.drnitz.aro.IntakeHistory
 import com.drnitz.aro.PlanDeepLink
+import com.drnitz.aro.R
 import com.drnitz.aro.data.db.AroDatabase
 import com.drnitz.aro.data.library.OfflineExerciseLibrary
 import com.drnitz.aro.data.library.OfflineFoodLibrary
@@ -197,13 +200,13 @@ fun MainScreen(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "Unable to load dashboard",
+                        text = stringResource(R.string.error_loading_dashboard),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.error,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = s.throwable.message ?: "Unknown error",
+                        text = s.throwable.message ?: stringResource(R.string.error_unknown),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -260,11 +263,11 @@ fun MainScreen(
     }
 }
 
-private enum class AroTab(val label: String, val icon: ImageVector) {
-    DIARY("Diary", Icons.AutoMirrored.Filled.MenuBook),
-    FOOD("Food", Icons.Default.Restaurant),
-    WORKOUTS("Workouts", Icons.Default.FitnessCenter),
-    GOALS("Goals", Icons.Default.TrackChanges),
+private enum class AroTab(@StringRes val labelRes: Int, val icon: ImageVector) {
+    DIARY(R.string.tab_diary, Icons.AutoMirrored.Filled.MenuBook),
+    FOOD(R.string.tab_food, Icons.Default.Restaurant),
+    WORKOUTS(R.string.tab_workouts, Icons.Default.FitnessCenter),
+    GOALS(R.string.tab_goals, Icons.Default.TrackChanges),
 }
 
 @OptIn(ExperimentalMaterial3AdaptiveNavigationSuiteApi::class)
@@ -350,7 +353,7 @@ internal fun MainScreenContent(
                     icon = { Icon(imageVector = tab.icon, contentDescription = null) },
                     label = {
                         Text(
-                            text = tab.label,
+                            text = stringResource(tab.labelRes),
                             style = MaterialTheme.typography.labelSmall,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -469,7 +472,7 @@ internal fun MainScreenContent(
                                 onToggleFavorite = onToggleFavorite,
                             )
                         } else {
-                            MissingLibrary("The food library is still loading.")
+                            MissingLibrary(stringResource(R.string.library_food_loading))
                         }
                     }
 
@@ -508,7 +511,7 @@ internal fun MainScreenContent(
                                 onLoadPreviousWorkout = onLoadPreviousWorkout,
                             )
                         } else {
-                            MissingLibrary("The exercise library is still loading.")
+                            MissingLibrary(stringResource(R.string.library_exercise_loading))
                         }
                     }
 

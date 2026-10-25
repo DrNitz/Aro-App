@@ -42,8 +42,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.drnitz.aro.R
 import com.drnitz.aro.data.repository.ActiveFast
 import com.drnitz.aro.domain.model.FastingStage
 import com.drnitz.aro.theme.AroTheme
@@ -103,7 +105,7 @@ internal fun FastingWidget(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Fasting",
+                        text = stringResource(R.string.fasting_title),
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                         color = MaterialTheme.colorScheme.onSurface,
                     )
@@ -114,7 +116,7 @@ internal fun FastingWidget(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Notifications,
-                            contentDescription = "Fasting Alerts",
+                            contentDescription = stringResource(R.string.cd_fasting_alerts),
                             tint = AroTheme.macroColors.fasting.copy(alpha = 0.7f),
                             modifier = Modifier.size(13.dp),
                         )
@@ -139,7 +141,7 @@ internal fun FastingWidget(
                 val stage = FastingStage.forElapsedHours(liveFast.elapsedMinutes / 60.0)
 
                 Text(
-                    text = "${elapsedHrs}h ${elapsedMins}m / ${liveFast.targetHours}h",
+                    text = stringResource(R.string.fasting_elapsed_target, elapsedHrs, elapsedMins, liveFast.targetHours),
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface,
                 )
@@ -184,16 +186,16 @@ internal fun FastingWidget(
                         modifier = Modifier.size(14.dp),
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("End Fast", style = MaterialTheme.typography.labelSmall)
+                    Text(stringResource(R.string.fasting_btn_end_fast), style = MaterialTheme.typography.labelSmall)
                 }
             } else {
                 Text(
                     text = if (planningMode && plannedFastingHours > 0) {
-                        "${plannedFastingHours}h fast planned"
+                        stringResource(R.string.fasting_planned_hours, plannedFastingHours)
                     } else if (planningMode) {
-                        "No fast planned"
+                        stringResource(R.string.fasting_no_fast_planned)
                     } else {
-                        "Ready to Fast"
+                        stringResource(R.string.fasting_ready_to_fast)
                     },
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -203,9 +205,9 @@ internal fun FastingWidget(
 
                 Text(
                     text = if (planningMode) {
-                        "Set a start time and reminder for this future day"
+                        stringResource(R.string.fasting_future_hint)
                     } else {
-                        "Select 16h, 18h, 20h or 24h"
+                        stringResource(R.string.fasting_select_hours_hint)
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
@@ -232,7 +234,7 @@ internal fun FastingWidget(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = if (planningMode) "Plan Fast" else "Start Fast",
+                        text = stringResource(if (planningMode) R.string.fasting_btn_plan_fast else R.string.fasting_btn_start_fast),
                         style = MaterialTheme.typography.labelSmall,
                     )
                 }
@@ -257,7 +259,7 @@ internal fun FastingWidget(
                     modifier = Modifier.size(13.dp),
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("View fasting log", style = MaterialTheme.typography.labelSmall)
+                Text(stringResource(R.string.fasting_btn_view_log), style = MaterialTheme.typography.labelSmall)
             }
         }
     }
@@ -270,10 +272,10 @@ internal fun StartFastProtocolDialog(
     onStartFast: (Int) -> Unit,
 ) {
     val protocols = listOf(
-        Triple(16, "16:8 Standard", "16h fast • 8h eating window (Optimal daily balance)"),
-        Triple(18, "18:6 Accelerated", "18h fast • 6h eating window (Enhanced fat oxidation)"),
-        Triple(20, "20:4 Warrior", "20h fast • 4h eating window (Advanced cellular autophagy)"),
-        Triple(24, "24:0 OMAD", "24h fast • One meal a day (Peak metabolic renewal)"),
+        Triple(16, R.string.fasting_protocol_16_title, R.string.fasting_protocol_16_desc),
+        Triple(18, R.string.fasting_protocol_18_title, R.string.fasting_protocol_18_desc),
+        Triple(20, R.string.fasting_protocol_20_title, R.string.fasting_protocol_20_desc),
+        Triple(24, R.string.fasting_protocol_24_title, R.string.fasting_protocol_24_desc),
     )
     var selectedHours by remember { mutableIntStateOf(16) }
 
@@ -282,14 +284,14 @@ internal fun StartFastProtocolDialog(
         title = {
             Column {
                 Text(
-                    text = if (planningMode) "Plan Fasting Protocol" else "Select Fasting Protocol",
+                    text = stringResource(if (planningMode) R.string.fasting_dialog_plan_title else R.string.fasting_dialog_select_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 )
                 Text(
                     text = if (planningMode) {
-                        "Add a fast to this future day. No fast starts until you confirm it later."
+                        stringResource(R.string.fasting_dialog_plan_subtitle)
                     } else {
-                        "Circadian & Metabolic Intermittent Fasting"
+                        stringResource(R.string.fasting_dialog_select_subtitle)
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -298,7 +300,7 @@ internal fun StartFastProtocolDialog(
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                protocols.forEach { (hours, title, description) ->
+                protocols.forEach { (hours, titleRes, descRes) ->
                     val isSelected = selectedHours == hours
                     Card(
                         shape = RoundedCornerShape(12.dp),
@@ -321,7 +323,7 @@ internal fun StartFastProtocolDialog(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
-                                    text = title,
+                                    text = stringResource(titleRes),
                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                                     color = if (isSelected) AroTheme.macroColors.fasting else MaterialTheme.colorScheme.onSurface,
                                 )
@@ -336,7 +338,7 @@ internal fun StartFastProtocolDialog(
                             }
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = description,
+                                text = stringResource(descRes),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -354,12 +356,12 @@ internal fun StartFastProtocolDialog(
                 ),
                 shape = RoundedCornerShape(10.dp),
             ) {
-                Text(if (planningMode) "Add Fast to Plan" else "Start Fast")
+                Text(stringResource(if (planningMode) R.string.fasting_btn_add_to_plan else R.string.fasting_btn_start_fast))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss, shape = RoundedCornerShape(10.dp)) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         },
     )

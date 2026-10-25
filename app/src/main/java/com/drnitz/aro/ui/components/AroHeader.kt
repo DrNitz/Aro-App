@@ -19,9 +19,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.drnitz.aro.R
 
 /**
  * Brand header: text-only wordmark, no logo asset.
@@ -48,7 +50,7 @@ fun AroHeader(
         ) {
             Column {
                 Text(
-                    text = "Aro",
+                    text = stringResource(R.string.app_name),
                     style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = (-0.5).sp,
@@ -56,7 +58,7 @@ fun AroHeader(
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    text = "by Dr.Nitz",
+                    text = stringResource(R.string.brand_attribution),
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Medium,
                         letterSpacing = 0.4.sp,
@@ -70,7 +72,7 @@ fun AroHeader(
             IconButton(onClick = onOpenNotifications) {
                 Icon(
                     imageVector = Icons.Default.Notifications,
-                    contentDescription = "Notification settings",
+                    contentDescription = stringResource(R.string.cd_notification_settings),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(22.dp),
                 )
@@ -78,7 +80,7 @@ fun AroHeader(
             IconButton(onClick = onOpenGoals) {
                 Icon(
                     imageVector = Icons.Default.Person,
-                    contentDescription = "Goals and body profile",
+                    contentDescription = stringResource(R.string.cd_goals_and_profile),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(22.dp),
                 )

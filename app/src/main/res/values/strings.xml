@@ -1,3 +1,120 @@
 <resources>
+    <!-- Brand -->
     <string name="app_name">Aro</string>
+    <string name="brand_attribution">by Dr.Nitz</string>
+
+    <!-- Navigation Tabs -->
+    <string name="tab_diary">Diary</string>
+    <string name="tab_food">Food</string>
+    <string name="tab_workouts">Workouts</string>
+    <string name="tab_goals">Goals</string>
+
+    <!-- Content Descriptions & Accessibility -->
+    <string name="cd_notification_settings">Notification settings</string>
+    <string name="cd_goals_and_profile">Goals and body profile</string>
+    <string name="cd_fasting_alerts">Fasting Alerts</string>
+    <string name="cd_hydration_reminders">Hydration Reminders</string>
+    <string name="cd_reset_water">Reset Water</string>
+    <string name="cd_plan_workout">Plan workout</string>
+    <string name="cd_log_workout">Log workout</string>
+    <string name="cd_duplicate_workout">Duplicate workout</string>
+    <string name="cd_delete_workout">Delete workout</string>
+    <string name="cd_delete_item">Delete item</string>
+    <string name="cd_missing_macro_alert">Missing macro alert</string>
+    <string name="cd_plan_food_slot">Plan food for %1$s</string>
+    <string name="cd_add_food_slot">Add food to %1$s</string>
+    <string name="state_expanded">Expanded</string>
+    <string name="state_collapsed">Collapsed</string>
+
+    <!-- Common Actions & Buttons -->
+    <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
+    <string name="action_done">Done</string>
+    <string name="btn_today">Today</string>
+    <string name="btn_plan_workout">Plan Workout</string>
+    <string name="btn_log_workout">Log Workout</string>
+    <string name="btn_plan_food_slot">Plan Food for %1$s</string>
+    <string name="btn_add_food_slot">Add Food to %1$s</string>
+
+    <!-- Diary & Dashboard -->
+    <string name="diary_header_label">DIARY</string>
+    <string name="section_meals_nutrition">MEALS &amp; NUTRITION</string>
+    <string name="section_workouts_expenditure">WORKOUTS &amp; EXPENDITURE</string>
+    <string name="clinical_audit_card_title">Clinical Electrolyte &amp; Na:K Audit</string>
+
+    <!-- Errors & Placeholders -->
+    <string name="error_loading_dashboard">Unable to load dashboard</string>
+    <string name="error_unknown">Unknown error</string>
+    <string name="library_food_loading">The food library is still loading.</string>
+    <string name="library_exercise_loading">The exercise library is still loading.</string>
+
+    <!-- Fasting Widget & Protocols -->
+    <string name="fasting_title">Fasting</string>
+    <string name="fasting_btn_end_fast">End Fast</string>
+    <string name="fasting_btn_start_fast">Start Fast</string>
+    <string name="fasting_btn_plan_fast">Plan Fast</string>
+    <string name="fasting_btn_add_to_plan">Add Fast to Plan</string>
+    <string name="fasting_btn_view_log">View fasting log</string>
+    <string name="fasting_elapsed_target">%1$dh %2$dm / %3$dh</string>
+    <string name="fasting_planned_hours">%1$dh fast planned</string>
+    <string name="fasting_no_fast_planned">No fast planned</string>
+    <string name="fasting_ready_to_fast">Ready to Fast</string>
+    <string name="fasting_future_hint">Set a start time and reminder for this future day</string>
+    <string name="fasting_select_hours_hint">Select 16h, 18h, 20h or 24h</string>
+    <string name="fasting_dialog_select_title">Select Fasting Protocol</string>
+    <string name="fasting_dialog_plan_title">Plan Fasting Protocol</string>
+    <string name="fasting_dialog_select_subtitle">Circadian &amp; Metabolic Intermittent Fasting</string>
+    <string name="fasting_dialog_plan_subtitle">Add a fast to this future day. No fast starts until you confirm it later.</string>
+    <string name="fasting_protocol_16_title">16:8 Standard</string>
+    <string name="fasting_protocol_16_desc">16h fast • 8h eating window (Optimal daily balance)</string>
+    <string name="fasting_protocol_18_title">18:6 Accelerated</string>
+    <string name="fasting_protocol_18_desc">18h fast • 6h eating window (Enhanced fat oxidation)</string>
+    <string name="fasting_protocol_20_title">20:4 Warrior</string>
+    <string name="fasting_protocol_20_desc">20h fast • 4h eating window (Advanced cellular autophagy)</string>
+    <string name="fasting_protocol_24_title">24:0 OMAD</string>
+    <string name="fasting_protocol_24_desc">24h fast • One meal a day (Peak metabolic renewal)</string>
+
+    <!-- Hydration Widget & Dialog -->
+    <string name="hydration_title">Hydration</string>
+    <string name="hydration_plan_title">Hydration plan</string>
+    <string name="hydration_planned_ml">%1$d / %2$d mL planned</string>
+    <string name="hydration_progress_ml">%1$d / %2$d mL</string>
+    <string name="hydration_not_logged">Not logged</string>
+    <string name="hydration_one_drink_logged">1 drink logged</string>
+    <string name="hydration_multiple_drinks_logged">%1$d drinks logged</string>
+    <string name="hydration_more">More</string>
+    <string name="hydration_btn_view_log">View water log</string>
+    <string name="hydration_dialog_log_title">Log Water</string>
+    <string name="hydration_dialog_plan_title">Plan Water</string>
+    <string name="hydration_dialog_plan_subtitle">Adds a water plan to this future day. It will not count as drunk water until you confirm it.</string>
+    <string name="hydration_volume_label">Volume (mL)</string>
+    <string name="hydration_dialog_clinical_note">Maintains plasma volume, renal clearance, and lipolysis during workouts and fasting.</string>
+    <string name="hydration_btn_add_water">Add Water</string>
+    <string name="hydration_btn_add_to_plan">Add Water to Plan</string>
+
+    <!-- Macros & Energy Balance -->
+    <string name="macro_protein">Protein</string>
+    <string name="macro_carbs">Carbs</string>
+    <string name="macro_fat">Fat</string>
+    <string name="macro_fiber">Fiber</string>
+    <string name="macro_of_target">of %1$s</string>
+    <string name="energy_goal">Goal</string>
+    <string name="energy_eaten">Eaten</string>
+    <string name="energy_burned">Burned</string>
+    <string name="energy_remaining">Remaining</string>
+    <string name="energy_surplus">Surplus</string>
+    <string name="kcal_burned_plus">+%1$d kcal</string>
+    <string name="missing_macros_prefix">Missing: %1$s</string>
+
+    <!-- Meal Slots -->
+    <string name="meal_breakfast">Breakfast</string>
+    <string name="meal_lunch">Lunch</string>
+    <string name="meal_dinner">Dinner</string>
+    <string name="meal_snacks">Snacks &amp; Extras</string>
+
+    <!-- Workouts Card -->
+    <string name="workouts_empty_today">No workouts logged today</string>
+    <string name="workouts_empty_today_hint">Track resistance (1RM &amp; tonnage) or cardio (MET)</string>
+    <string name="workouts_empty_plan">Nothing planned for this day</string>
+    <string name="workouts_empty_plan_hint">Add a future workout plan; it will appear in the Plan view</string>
 </resources>
