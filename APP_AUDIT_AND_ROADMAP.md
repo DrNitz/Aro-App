@@ -679,6 +679,37 @@ Harden the app for Google Play or GitHub Releases with code shrinking, release s
 
 ---
 
+### Phase 5: Secondary Screen UI/UX Optimization Pass — COMPLETE
+
+#### Objective
+Elevate touch targets, empty states, and semantic theming consistency across secondary dialogs and screens (`AddFoodDialog`, `LogWorkoutDialog`, `VitalsScreen`, `BodyPlannerScreen`) to meet clinical accessibility standards (44–48dp minimum targets) and eliminate layout truncation.
+
+#### Changes & Optimizations
+1. **`VitalsScreen.kt`**:
+   - Replaced hardcoded color values (`0xFF10B981`, `0xFFBE123C`, `0xFFDC2626`) with semantic theme tokens (`AroTheme.macroColors`, `MaterialTheme.colorScheme.primary`, `AroClinicalHighRisk`).
+   - Replaced plain text placeholders with styled `ClinicalEmptyState` cards featuring circular icon badges, typography, and direct action triggers for both "Patient Vitals" and "Doctor Visits".
+   - Expanded delete icon button hit areas from 24dp to 40dp with descriptive accessibility labels.
+
+2. **`BodyPlannerScreen.kt`**:
+   - Enforced 48dp minimum touch target heights (`heightIn(min = 48.dp)`) across Activity Level, Goal Strategy, and Macronutrient Preset selector cards.
+   - Replaced hardcoded risk hex colors with `AroClinicalHighRisk`.
+   - Fixed Compose Row unweighted text compression in Clinical Protocol and Molar Na:K Ratio headers (`Column(modifier = Modifier.weight(1f))`), preventing badge text ("Cardioprotective Baseline") from wrapping into a vertical column.
+
+3. **`LogWorkoutDialog.kt`**:
+   - Enhanced set steppers (`-2.5kg`, `+2.5kg`, `-1 rep`, `+1 rep`) to `heightIn(min = 34.dp)` with 8dp rounded corners and centered typography.
+   - Sized "Duplicate" and "Add Set" actions to `heightIn(min = 36.dp)` with horizontal padding.
+   - Sized set delete icon buttons to 38dp touch targets.
+   - Added centered empty state cards for both resistance exercise search and cardio activities when queries yield zero matches.
+
+4. **`AddFoodDialog.kt`**:
+   - Enlarged quick portion delta pills (-50g, -10g, +10g, +50g) and preset buttons (100g, 200g) to 44dp minimum heights (`heightIn(min = 44.dp)`).
+   - Added styled empty state card with icon, title, description, and "Search Open Food Facts" button when local search finds no items.
+
+5. **Live Device Verification**:
+   - Fully verified interactive flows and rendering on Infinix HOT 10S (`066913116B142056`, 720x1640 physical display).
+
+---
+
 ## 7. Verification & Test Results Reference
 
 ### Unit Tests

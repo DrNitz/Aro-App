@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
@@ -266,15 +268,15 @@ internal fun EditPortionDialog(
                                 val next = (currentGrams + delta).coerceAtLeast(1.0)
                                 gramsText = next.roundToInt().toString()
                             },
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
                             modifier = Modifier
                                 .weight(1f)
-                                .height(32.dp),
+                                .heightIn(min = 44.dp),
                         ) {
                             Text(
                                 text = if (delta > 0) "+$delta" else "$delta",
-                                style = MaterialTheme.typography.labelSmall,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                             )
                         }
                     }
@@ -592,7 +594,10 @@ private fun AddFoodDialogBody(
                         OutlinedButton(
                             onClick = { portionGramsText = common.grams.roundToInt().toString() },
                             shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .heightIn(min = 44.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
                         ) {
                             Text(
                                 text = "${common.name} (${common.grams.roundToInt()}g)",
@@ -604,14 +609,20 @@ private fun AddFoodDialogBody(
                     OutlinedButton(
                         onClick = { portionGramsText = "100" },
                         shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.weight(0.7f),
+                        modifier = Modifier
+                            .weight(0.7f)
+                            .heightIn(min = 44.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
                     ) {
                         Text("100g", style = MaterialTheme.typography.labelSmall)
                     }
                     OutlinedButton(
                         onClick = { portionGramsText = "200" },
                         shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.weight(0.7f),
+                        modifier = Modifier
+                            .weight(0.7f)
+                            .heightIn(min = 44.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
                     ) {
                         Text("200g", style = MaterialTheme.typography.labelSmall)
                     }
@@ -806,19 +817,43 @@ private fun AddFoodDialogBody(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
-                            .padding(vertical = 32.dp),
+                            .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            modifier = Modifier.size(52.dp),
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.Restaurant,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(24.dp),
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = "No curated foods matching \"$query\"",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center,
                         )
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Expand your search to millions of global products on Open Food Facts.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
                         Button(
                             onClick = { isOnlineMode = true },
-                            shape = RoundedCornerShape(10.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.heightIn(min = 44.dp),
                         ) {
                             Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))

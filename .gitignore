@@ -21,3 +21,4 @@ local.properties
 # OS / editor files
 .DS_Store
 *.swp
+.opencode/

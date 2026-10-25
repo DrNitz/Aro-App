@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -504,7 +505,8 @@ private fun BodyPlannerTabContent(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                    .heightIn(min = 48.dp)
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
@@ -573,7 +575,8 @@ private fun BodyPlannerTabContent(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                    .heightIn(min = 48.dp)
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
@@ -651,7 +654,8 @@ private fun BodyPlannerTabContent(
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                    .heightIn(min = 48.dp)
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
                                 verticalArrangement = Arrangement.spacedBy(6.dp),
                             ) {
                                 Row(
@@ -912,7 +916,7 @@ private fun ClinicalAuditTabContent(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "CLINICAL PROTOCOL",
                                 style = MaterialTheme.typography.labelMedium.copy(
@@ -927,6 +931,7 @@ private fun ClinicalAuditTabContent(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
+                        Spacer(Modifier.width(8.dp))
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
@@ -937,6 +942,7 @@ private fun ClinicalAuditTabContent(
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary,
                                 ),
+                                maxLines = 1,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                             )
                         }
@@ -1062,7 +1068,7 @@ private fun MolarNaKSpectrumCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "MOLAR NA:K RATIO METER",
                         style = MaterialTheme.typography.labelMedium.copy(
@@ -1077,6 +1083,7 @@ private fun MolarNaKSpectrumCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                Spacer(Modifier.width(8.dp))
 
                 val statusBadgeColor = when (ratio.status) {
                     RatioStatus.OPTIMAL -> AroClinicalOptimal
@@ -1220,7 +1227,7 @@ private fun NaKSpectrumMeterBar(
                     AroClinicalOptimal,
                     AroClinicalModerate,
                     AroClinicalHighRisk,
-                    Color(0xFFBE123C),
+                    AroClinicalHighRisk,
                 ),
             )
 

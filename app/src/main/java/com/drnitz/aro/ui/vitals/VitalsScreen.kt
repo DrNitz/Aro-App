@@ -63,6 +63,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -340,11 +341,11 @@ private fun VitalsTabContent(
 
                             latest.bloodPressure?.let { bp ->
                                 val stageColor = when (bp.stage) {
-                                    BloodPressureStage.NORMAL -> Color(0xFF10B981)
-                                    BloodPressureStage.ELEVATED -> Color(0xFFF59E0B)
-                                    BloodPressureStage.STAGE_1_HYPERTENSION -> Color(0xFFF97316)
-                                    BloodPressureStage.STAGE_2_HYPERTENSION -> Color(0xFFEF4444)
-                                    BloodPressureStage.HYPERTENSIVE_CRISIS -> Color(0xFFDC2626)
+                                    BloodPressureStage.NORMAL -> AroTheme.macroColors.clinicalOptimal
+                                    BloodPressureStage.ELEVATED -> AroTheme.macroColors.clinicalModerate
+                                    BloodPressureStage.STAGE_1_HYPERTENSION -> AroTheme.macroColors.carbs
+                                    BloodPressureStage.STAGE_2_HYPERTENSION -> AroTheme.macroColors.clinicalHighRisk
+                                    BloodPressureStage.HYPERTENSIVE_CRISIS -> AroTheme.macroColors.calories
                                 }
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
@@ -417,11 +418,12 @@ private fun VitalsTabContent(
 
         if (vitals.isEmpty()) {
             item {
-                Text(
-                    text = "No recorded history yet.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 4.dp),
+                ClinicalEmptyState(
+                    icon = Icons.Default.Favorite,
+                    title = "No Vitals Recorded Yet",
+                    description = "Track blood pressure, blood glucose, SpO2, and temperature to monitor your clinical trends over time.",
+                    actionLabel = "Record First Vital",
+                    onAction = onOpenLogVitals,
                 )
             }
         } else {
@@ -454,12 +456,12 @@ private fun VitalsHistoryCard(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
 
-                IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
+                IconButton(onClick = onDelete, modifier = Modifier.size(40.dp)) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f),
-                        modifier = Modifier.size(16.dp),
+                        contentDescription = "Delete vital entry",
+                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                        modifier = Modifier.size(18.dp),
                     )
                 }
             }
@@ -540,8 +542,8 @@ private fun ConsultationsTabContent(
                     .height(48.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF10B981), // Emerald
-                    contentColor = Color.White,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
                 ),
             ) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -565,11 +567,12 @@ private fun ConsultationsTabContent(
 
         if (consultations.isEmpty()) {
             item {
-                Text(
-                    text = "No clinician consultation records logged. Tap above to add visit notes, diagnoses, and medication plans.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 4.dp),
+                ClinicalEmptyState(
+                    icon = Icons.Default.MedicalServices,
+                    title = "No Doctor Consultations Logged",
+                    description = "Log clinician visits, doctor recommendations, diagnoses, and medication plans for clinical review and PDF export.",
+                    actionLabel = "Log Consultation",
+                    onAction = onOpenLogConsult,
                 )
             }
         } else {
@@ -599,7 +602,7 @@ private fun MedicationAdherenceCard(adherence: MedicationAdherence) {
                     Icon(
                         imageVector = Icons.Default.Medication,
                         contentDescription = null,
-                        tint = Color(0xFF10B981),
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -620,7 +623,7 @@ private fun MedicationAdherenceCard(adherence: MedicationAdherence) {
                 Text(
                     text = "${adherence.overallPercent}%",
                     style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                    color = Color(0xFF10B981),
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
 
@@ -632,8 +635,8 @@ private fun MedicationAdherenceCard(adherence: MedicationAdherence) {
                     .fillMaxWidth()
                     .height(6.dp)
                     .clip(CircleShape),
-                color = Color(0xFF10B981),
-                trackColor = Color(0xFF10B981).copy(alpha = 0.15f),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
             )
 
             Spacer(modifier = Modifier.height(6.dp))
@@ -667,7 +670,7 @@ private fun MedicationAdherenceCard(adherence: MedicationAdherence) {
                     Text(
                         text = "${entry.percent}%",
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                        color = if (entry.percent >= 80) Color(0xFF10B981) else Color(0xFFF59E0B),
+                        color = if (entry.percent >= 80) AroTheme.macroColors.clinicalOptimal else AroTheme.macroColors.clinicalModerate,
                     )
                 }
             }
@@ -704,12 +707,12 @@ private fun ConsultationCard(
                     )
                 }
 
-                IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
+                IconButton(onClick = onDelete, modifier = Modifier.size(40.dp)) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f),
-                        modifier = Modifier.size(16.dp),
+                        contentDescription = "Delete consultation record",
+                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                        modifier = Modifier.size(18.dp),
                     )
                 }
             }
@@ -1237,4 +1240,69 @@ private fun LogConsultationDialog(
             }
         },
     )
+}
+
+@Composable
+private fun ClinicalEmptyState(
+    icon: ImageVector,
+    title: String,
+    description: String,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                modifier = Modifier.size(52.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(26.dp),
+                    )
+                }
+            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+            if (actionLabel != null && onAction != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                OutlinedButton(
+                    onClick = onAction,
+                    shape = RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(actionLabel)
+                }
+            }
+        }
+    }
 }

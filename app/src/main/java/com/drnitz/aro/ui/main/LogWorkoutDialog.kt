@@ -13,14 +13,16 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -28,6 +30,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -650,10 +653,11 @@ internal fun LogWorkoutDialog(
                                             val cloned = lastSet?.duplicate() ?: SetEntry(weightKg = 60.0, reps = 10)
                                             sets.add(cloned)
                                         },
-                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                        modifier = Modifier.heightIn(min = 36.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                                         shape = RoundedCornerShape(8.dp),
                                     ) {
-                                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(13.dp))
+                                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(14.dp))
                                         Spacer(Modifier.width(4.dp))
                                         Text("Duplicate", style = MaterialTheme.typography.labelSmall)
                                     }
@@ -663,10 +667,11 @@ internal fun LogWorkoutDialog(
                                             val lastSet = sets.lastOrNull()
                                             sets.add(SetEntry(weightKg = lastSet?.weightKg ?: 60.0, reps = lastSet?.reps ?: 10))
                                         },
-                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                        modifier = Modifier.heightIn(min = 36.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                                         shape = RoundedCornerShape(8.dp),
                                     ) {
-                                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
+                                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(15.dp))
                                         Spacer(Modifier.width(4.dp))
                                         Text("Add Set", style = MaterialTheme.typography.labelSmall)
                                     }
@@ -795,7 +800,7 @@ internal fun LogWorkoutDialog(
                                                         val clone = currentSet.duplicate()
                                                         sets.add(index + 1, clone)
                                                     },
-                                                    modifier = Modifier.size(28.dp),
+                                                    modifier = Modifier.size(38.dp),
                                                 ) {
                                                     Icon(
                                                         imageVector = Icons.Default.ContentCopy,
@@ -808,7 +813,7 @@ internal fun LogWorkoutDialog(
                                                 if (sets.size > 1) {
                                                     IconButton(
                                                         onClick = { sets.removeAt(index) },
-                                                        modifier = Modifier.size(28.dp),
+                                                        modifier = Modifier.size(38.dp),
                                                     ) {
                                                         Icon(
                                                             imageVector = Icons.Default.Close,
@@ -829,67 +834,91 @@ internal fun LogWorkoutDialog(
                                                 verticalAlignment = Alignment.CenterVertically,
                                             ) {
                                                 Surface(
-                                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                                                    shape = RoundedCornerShape(6.dp),
-                                                    modifier = Modifier.clickable {
-                                                        val newWeight = (currentSet.weightKg - 2.5).coerceAtLeast(0.0)
-                                                        sets[index] = currentSet.copy(weightKg = newWeight)
-                                                    },
+                                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    modifier = Modifier
+                                                        .heightIn(min = 34.dp)
+                                                        .clickable {
+                                                            val newWeight = (currentSet.weightKg - 2.5).coerceAtLeast(0.0)
+                                                            sets[index] = currentSet.copy(weightKg = newWeight)
+                                                        },
                                                 ) {
-                                                    Text(
-                                                        text = "-2.5kg",
-                                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                                    )
+                                                    Box(
+                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                                        contentAlignment = Alignment.Center,
+                                                    ) {
+                                                        Text(
+                                                            text = "-2.5kg",
+                                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Medium),
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        )
+                                                    }
                                                 }
 
                                                 Surface(
-                                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                                                    shape = RoundedCornerShape(6.dp),
-                                                    modifier = Modifier.clickable {
-                                                        val newWeight = currentSet.weightKg + 2.5
-                                                        sets[index] = currentSet.copy(weightKg = newWeight)
-                                                    },
+                                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    modifier = Modifier
+                                                        .heightIn(min = 34.dp)
+                                                        .clickable {
+                                                            val newWeight = currentSet.weightKg + 2.5
+                                                            sets[index] = currentSet.copy(weightKg = newWeight)
+                                                        },
                                                 ) {
-                                                    Text(
-                                                        text = "+2.5kg",
-                                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                                    )
+                                                    Box(
+                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                                        contentAlignment = Alignment.Center,
+                                                    ) {
+                                                        Text(
+                                                            text = "+2.5kg",
+                                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Medium),
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        )
+                                                    }
                                                 }
 
                                                 Surface(
-                                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                                                    shape = RoundedCornerShape(6.dp),
-                                                    modifier = Modifier.clickable {
-                                                        val newReps = (currentSet.reps - 1).coerceAtLeast(0)
-                                                        sets[index] = currentSet.copy(reps = newReps)
-                                                    },
+                                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    modifier = Modifier
+                                                        .heightIn(min = 34.dp)
+                                                        .clickable {
+                                                            val newReps = (currentSet.reps - 1).coerceAtLeast(0)
+                                                            sets[index] = currentSet.copy(reps = newReps)
+                                                        },
                                                 ) {
-                                                    Text(
-                                                        text = "-1 rep",
-                                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                                    )
+                                                    Box(
+                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                                        contentAlignment = Alignment.Center,
+                                                    ) {
+                                                        Text(
+                                                            text = "-1 rep",
+                                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Medium),
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        )
+                                                    }
                                                 }
 
                                                 Surface(
-                                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                                                    shape = RoundedCornerShape(6.dp),
-                                                    modifier = Modifier.clickable {
-                                                        val newReps = currentSet.reps + 1
-                                                        sets[index] = currentSet.copy(reps = newReps)
-                                                    },
+                                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    modifier = Modifier
+                                                        .heightIn(min = 34.dp)
+                                                        .clickable {
+                                                            val newReps = currentSet.reps + 1
+                                                            sets[index] = currentSet.copy(reps = newReps)
+                                                        },
                                                 ) {
-                                                    Text(
-                                                        text = "+1 rep",
-                                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                                    )
+                                                    Box(
+                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                                        contentAlignment = Alignment.Center,
+                                                    ) {
+                                                        Text(
+                                                            text = "+1 rep",
+                                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Medium),
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }
@@ -1057,58 +1086,97 @@ internal fun LogWorkoutDialog(
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            items(exerciseResults.size, key = { exerciseResults[it].id }) { index ->
-                                val exercise = exerciseResults[index]
-                                Card(
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                                    ),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .clickable {
-                                            selectedExercise = exercise
-                                            sets.clear()
-                                            sets.add(SetEntry(weightKg = 60.0, reps = 10))
-                                        },
+                        if (exerciseResults.isEmpty()) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                                    .padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                    modifier = Modifier.size(52.dp),
                                 ) {
-                                    Row(
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Default.FitnessCenter,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(24.dp),
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = "No exercises found",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = if (exerciseQuery.isNotBlank()) "No match for \"$exerciseQuery\"" else "No exercises found in $selectedMuscle",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                items(exerciseResults.size, key = { exerciseResults[it].id }) { index ->
+                                    val exercise = exerciseResults[index]
+                                    Card(
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                        ),
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(12.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .clickable {
+                                                selectedExercise = exercise
+                                                sets.clear()
+                                                sets.add(SetEntry(weightKg = 60.0, reps = 10))
+                                            },
                                     ) {
-                                        ExerciseImage(
-                                            imageUrl = exercise.imageUrlAt(0),
-                                            contentDescription = exercise.name,
-                                            modifier = Modifier.size(44.dp),
-                                            cornerRadius = 10.dp,
-                                        )
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = exercise.name,
-                                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                                                color = MaterialTheme.colorScheme.onSurface,
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(12.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            ExerciseImage(
+                                                imageUrl = exercise.imageUrlAt(0),
+                                                contentDescription = exercise.name,
+                                                modifier = Modifier.size(44.dp),
+                                                cornerRadius = 10.dp,
                                             )
-                                            Text(
-                                                text = "${exercise.targetMuscleSummary} • ${exercise.equipment ?: "Bodyweight"}",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = exercise.name,
+                                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                )
+                                                Text(
+                                                    text = "${exercise.targetMuscleSummary} • ${exercise.equipment ?: "Bodyweight"}",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                )
+                                            }
+                                            Icon(
+                                                imageVector = Icons.Default.ChevronRight,
+                                                contentDescription = "Select exercise",
+                                                tint = MaterialTheme.colorScheme.primary,
                                             )
                                         }
-                                        Icon(
-                                            imageVector = Icons.Default.ChevronRight,
-                                            contentDescription = "Select exercise",
-                                            tint = MaterialTheme.colorScheme.primary,
-                                        )
                                     }
                                 }
                             }
@@ -1550,24 +1618,62 @@ internal fun LogWorkoutDialog(
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            items(filteredCardioActivities.size, key = { filteredCardioActivities[it].id }) { index ->
-                                val activity = filteredCardioActivities[index]
-                                Card(
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                                    ),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .clickable { selectedActivity = activity },
+                        if (filteredCardioActivities.isEmpty()) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                                    .padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                    modifier = Modifier.size(52.dp),
                                 ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.DirectionsRun,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(24.dp),
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = "No cardio activities found",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = if (cardioQuery.isNotBlank()) "No match for \"$cardioQuery\"" else "No activities found in $selectedCardioCategory",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                items(filteredCardioActivities.size, key = { filteredCardioActivities[it].id }) { index ->
+                                    val activity = filteredCardioActivities[index]
+                                    Card(
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                        ),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .clickable { selectedActivity = activity },
+                                    ) {
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -1608,6 +1714,7 @@ internal fun LogWorkoutDialog(
                 }
             }
         }
+    }
 
         plateCalculatorTargetWeight?.let { weight ->
             PlateCalculatorDialog(
