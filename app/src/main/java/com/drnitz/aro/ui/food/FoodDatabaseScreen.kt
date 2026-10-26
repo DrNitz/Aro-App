@@ -131,8 +131,6 @@ import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-private enum class FoodSource { OFFLINE, ONLINE }
-
 private enum class FoodFilter(val label: String) {
     ALL("All"),
     FAVORITES("Favorites"),
@@ -166,9 +164,9 @@ private fun MealSlot.next(): MealSlot = when (this) {
  * Dedicated Food & Nutrition tab.
  *
  * Mirrors the web food database: image cards with Nutri-Score/NOVA badges, instant
- * search, favourite/recents filters and a barcode shortcut. Offline whole foods remain
- * the default source; Open Food Facts is an explicit opt-in so the app never requires a
- * network to log a meal.
+ * search, favourite/recents filters and a barcode shortcut. One search covers both the
+ * bundled food library and Open Food Facts: local matches are listed first, then live
+ * packaged-food matches, so logging a whole food never depends on a network.
  *
  * The card preview and the one-tap log button both use [CuratedFoodItem.defaultServingGrams],
  * so the numbers on screen are exactly the numbers written to the diary. Nutrients the
@@ -231,7 +229,6 @@ fun FoodDatabaseScreen(
     val effectiveFatEaten = dayTotals?.fatG ?: 0.0
 
     var query by remember { mutableStateOf("") }
-    var source by remember { mutableStateOf(FoodSource.OFFLINE) }
     var filter by remember { mutableStateOf(FoodFilter.ALL) }
     var selectedCategory by remember { mutableStateOf("All") }
     var categories by remember { mutableStateOf(listOf("All")) }
@@ -249,7 +246,6 @@ fun FoodDatabaseScreen(
     var openingFoodId by remember { mutableStateOf<String?>(null) }
     var showScanner by remember { mutableStateOf(false) }
     var drawerExpanded by remember { mutableStateOf(false) }
-    var drawerFullScreen by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
     val curatedById = remember(allCuratedFoods) { allCuratedFoods.associateBy { it.id } }
@@ -273,14 +269,14 @@ fun FoodDatabaseScreen(
         isOfflineLoading = false
     }
 
-    LaunchedEffect(query, source, searchRetry) {
-        if (source != FoodSource.ONLINE) {
-            isOnlineLoading = false
-            searchError = null
-            return@LaunchedEffect
-        }
-        val clean = query.trim()
-        if (clean.length < 2 || openFoodFactsClient == null) {
+    val cleanQuery = query.trim()
+    val onlineSearchEnabled = openFoodFactsClient != null &&
+        filter == FoodFilter.ALL &&
+        selectedCategory == "All" &&
+        cleanQuery.length >= 2
+
+    LaunchedEffect(cleanQuery, filter, selectedCategory, searchRetry) {
+        if (!onlineSearchEnabled) {
             isOnlineLoading = false
             onlineResults = emptyList()
             searchError = null
@@ -288,11 +284,11 @@ fun FoodDatabaseScreen(
         }
         isOnlineLoading = true
         searchError = null
+        onlineResults = emptyList()
         delay(450)
         try {
-            val results = openFoodFactsClient.searchProducts(clean)
+            val results = openFoodFactsClient?.searchProducts(cleanQuery).orEmpty()
             onlineResults = results.distinctBy { it.id }
-            if (results.isEmpty()) searchError = "No Open Food Facts products matched \"$clean\"."
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -302,20 +298,32 @@ fun FoodDatabaseScreen(
         }
     }
 
-    val displayResults: List<CuratedFoodItem> = when {
-        source == FoodSource.ONLINE -> onlineResults
-        filter == FoodFilter.FAVORITES -> enrichedFavorites.filter { it.matchesQuery(query) }
-        filter == FoodFilter.RECENT -> enrichedRecents.filter { it.matchesQuery(query) }
-        else -> (offlineResults + enrichedFavorites + enrichedRecents)
+    val localResults: List<CuratedFoodItem> = when (filter) {
+        FoodFilter.FAVORITES -> enrichedFavorites.filter { it.matchesQuery(query) }
+        FoodFilter.RECENT -> enrichedRecents.filter { it.matchesQuery(query) }
+        FoodFilter.ALL -> (offlineResults + enrichedFavorites + enrichedRecents)
             .filter { it.matchesQuery(query) && it.matchesCategory(selectedCategory) }
             .distinctBy { it.id }
     }
+    val localIds = localResults.map { it.id }.toSet()
+    val localCodes = localResults.mapNotNull { it.code?.takeIf { code -> code.isNotBlank() } }.toSet()
+    val onlineExtra = if (onlineSearchEnabled) {
+        onlineResults.filterNot { food ->
+            food.id in localIds || food.code?.let { it in localCodes } == true
+        }
+    } else {
+        emptyList()
+    }
+    val displayResults: List<CuratedFoodItem> = localResults + onlineExtra
 
     /** Opens a search hit immediately, then swaps in the full barcode label when available. */
     fun openFoodDetails(food: CuratedFoodItem) {
         val code = food.code
         // Saved OFF favourites/recents keep their barcode, so they rehydrate the same way.
+        // Curated foods also carry a slug in `code` for barcode matching, but their full
+        // label is already bundled - never send that slug to the barcode endpoint.
         val needsEnrichment = openFoodFactsClient != null &&
+            food.id.startsWith("off-") &&
             !code.isNullOrBlank() &&
             (food.ingredientsText == null || food.micronutrients.isEmpty() || food.commonServing == null)
 
@@ -426,7 +434,6 @@ fun FoodDatabaseScreen(
 
             FoodActionStrip(
                 isMealShowing = isMealDistributionShowing,
-                isOnline = source == FoodSource.ONLINE,
                 isMuted = isSoundMuted,
                 onFlip = {
                     isMealDistributionShowing = !isMealDistributionShowing
@@ -434,10 +441,6 @@ fun FoodDatabaseScreen(
                 },
                 onScan = {
                     showScanner = true
-                    BodySoundHaptics.playClickSound(isSoundMuted)
-                },
-                onToggleSource = {
-                    source = if (source == FoodSource.OFFLINE) FoodSource.ONLINE else FoodSource.OFFLINE
                     BodySoundHaptics.playClickSound(isSoundMuted)
                 },
                 onToggleSound = { isSoundMuted = !isSoundMuted },
@@ -827,12 +830,10 @@ fun FoodDatabaseScreen(
                         }
                         Column {
                             Text(
-                                text = if (selectedCategory != "All") {
-                                    "$selectedCategory Foods"
-                                } else if (source == FoodSource.ONLINE) {
-                                    "Open Food Facts"
-                                } else {
-                                    "Food Catalog"
+                                text = when {
+                                    selectedCategory != "All" -> "$selectedCategory Foods"
+                                    cleanQuery.isNotEmpty() -> "Search results"
+                                    else -> "Food Catalog"
                                 },
                                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -865,8 +866,6 @@ fun FoodDatabaseScreen(
             exit = slideOutVertically(targetOffsetY = { it }),
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
-            val drawerHeightFraction = if (drawerFullScreen) 0.92f else 0.64f
-
             Card(
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
                 colors = CardDefaults.cardColors(
@@ -876,43 +875,35 @@ fun FoodDatabaseScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(drawerHeightFraction),
+                    .fillMaxHeight(),
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 14.dp)
-                        .padding(top = 8.dp),
+                        .padding(horizontal = 12.dp)
+                        .padding(top = 3.dp),
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .pointerInput(drawerFullScreen) {
+                            .pointerInput(Unit) {
                                 detectVerticalDragGestures { _, dragAmount ->
-                                    if (dragAmount < -15f && !drawerFullScreen) {
-                                        drawerFullScreen = true
-                                    } else if (dragAmount > 15f) {
-                                        if (drawerFullScreen) {
-                                            drawerFullScreen = false
-                                        } else {
-                                            drawerExpanded = false
-                                        }
-                                    }
+                                    if (dragAmount > 15f) drawerExpanded = false
                                 }
                             }
-                            .padding(vertical = 4.dp),
+                            .padding(vertical = 2.dp),
                     ) {
                         Box(
                             modifier = Modifier
-                                .width(44.dp)
+                                .width(40.dp)
                                 .height(4.dp)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
                         )
                     }
 
-                    Spacer(Modifier.height(4.dp))
+                    Spacer(Modifier.height(2.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -925,7 +916,11 @@ fun FoodDatabaseScreen(
                             modifier = Modifier.weight(1f),
                         ) {
                             Text(
-                                text = if (selectedCategory != "All") "$selectedCategory Foods" else "Food Catalog",
+                                text = when {
+                                    selectedCategory != "All" -> "$selectedCategory Foods"
+                                    cleanQuery.isNotEmpty() -> "Search results"
+                                    else -> "Food Catalog"
+                                },
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                 color = MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
@@ -955,24 +950,10 @@ fun FoodDatabaseScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(
                                 onClick = {
-                                    drawerFullScreen = !drawerFullScreen
-                                    BodySoundHaptics.playClickSound(isSoundMuted)
-                                },
-                                modifier = Modifier.size(36.dp),
-                            ) {
-                                Icon(
-                                    imageVector = if (drawerFullScreen) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
-                                    contentDescription = if (drawerFullScreen) "Collapse height" else "Expand full height",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-
-                            IconButton(
-                                onClick = {
                                     drawerExpanded = false
                                     BodySoundHaptics.playClickSound(isSoundMuted)
                                 },
-                                modifier = Modifier.size(36.dp),
+                                modifier = Modifier.size(34.dp),
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Close,
@@ -986,41 +967,35 @@ fun FoodDatabaseScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp),
+                            .padding(vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(11.dp),
                             color = MaterialTheme.colorScheme.surfaceContainerHigh,
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
                             modifier = Modifier
                                 .weight(1f)
-                                .height(44.dp),
+                                .height(40.dp),
                         ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .padding(horizontal = 10.dp),
+                                    .padding(horizontal = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                horizontalArrangement = Arrangement.spacedBy(5.dp),
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Search,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                    modifier = Modifier.size(16.dp),
+                                    modifier = Modifier.size(15.dp),
                                 )
                                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
                                     if (query.isEmpty()) {
                                         Text(
-                                            text = if (source == FoodSource.ONLINE) {
-                                                "Search Open Food Facts..."
-                                            } else if (allCuratedFoods.isEmpty()) {
-                                                "Search whole foods..."
-                                            } else {
-                                                "Search ${allCuratedFoods.size} whole foods..."
-                                            },
+                                            text = "Search foods or brands...",
                                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
                                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                             maxLines = 1,
@@ -1042,89 +1017,67 @@ fun FoodDatabaseScreen(
                                 if (query.isNotEmpty()) {
                                     IconButton(
                                         onClick = { query = "" },
-                                        modifier = Modifier.size(24.dp),
+                                        modifier = Modifier.size(22.dp),
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Close,
                                             contentDescription = "Clear search",
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(14.dp),
+                                            modifier = Modifier.size(13.dp),
                                         )
                                     }
                                 }
                                 IconButton(
                                     onClick = { showScanner = true },
-                                    modifier = Modifier.size(28.dp),
+                                    modifier = Modifier.size(26.dp),
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.QrCodeScanner,
                                         contentDescription = "Scan barcode",
                                         tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(18.dp),
+                                        modifier = Modifier.size(17.dp),
                                     )
                                 }
                             }
                         }
                     }
 
-                    // Row 1: source + collection filter. FlowRow keeps every chip fully
-                    // visible at 360dp instead of clipping the last one in a scroller.
+                    // One compact collection row. With the old source chip gone these
+                    // three filters fit on a single line at 360dp.
                     FlowRow(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
-                        FilterChip(
-                            selected = source == FoodSource.ONLINE,
-                            onClick = {
-                                source = if (source == FoodSource.OFFLINE) FoodSource.ONLINE else FoodSource.OFFLINE
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = if (source == FoodSource.ONLINE) Icons.Default.Language else Icons.Default.Restaurant,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp),
-                                )
-                            },
-                            label = {
-                                Text(
-                                    if (source == FoodSource.ONLINE) "Open Food Facts" else "Whole foods",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                                )
-                            },
-                            shape = RoundedCornerShape(8.dp),
-                        )
-
-                        if (source == FoodSource.OFFLINE) {
-                            FoodFilter.entries.forEach { option ->
-                                FilterChip(
-                                    selected = filter == option,
-                                    onClick = { filter = option },
-                                    leadingIcon = if (option == FoodFilter.FAVORITES) {
-                                        {
-                                            Icon(
-                                                imageVector = if (filter == option) Icons.Default.Star else Icons.Default.StarBorder,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(13.dp),
-                                            )
-                                        }
-                                    } else null,
-                                    label = {
-                                        Text(
-                                            option.label,
-                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                        FoodFilter.entries.forEach { option ->
+                            FilterChip(
+                                selected = filter == option,
+                                onClick = { filter = option },
+                                leadingIcon = if (option == FoodFilter.FAVORITES) {
+                                    {
+                                        Icon(
+                                            imageVector = if (filter == option) Icons.Default.Star else Icons.Default.StarBorder,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(13.dp),
                                         )
-                                    },
-                                    shape = RoundedCornerShape(8.dp),
-                                )
-                            }
+                                    }
+                                } else null,
+                                label = {
+                                    Text(
+                                        option.label,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                                    )
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                            )
                         }
                     }
 
-                    // Row 2: categories (whole foods only).
-                    if (source == FoodSource.OFFLINE && filter == FoodFilter.ALL) {
+                    // Categories only matter when browsing the local catalogue; hide the
+                    // row while searching so results get the space.
+                    if (filter == FoodFilter.ALL && (cleanQuery.isEmpty() || selectedCategory != "All")) {
                         LazyRow(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
                             items(categories, key = { "cat_$it" }) { category ->
@@ -1141,16 +1094,25 @@ fun FoodDatabaseScreen(
                                 )
                             }
                         }
-                    } else if (source == FoodSource.ONLINE) {
-                        Text(
-                            text = "Live Open Food Facts results. Tap a product to load its full label and micronutrients.",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 4.dp),
-                        )
                     }
 
-                    Spacer(Modifier.height(4.dp))
+                    Spacer(Modifier.height(2.dp))
+
+                    val foodCard: @Composable (CuratedFoodItem) -> Unit = { food ->
+                        FoodDatabaseCard(
+                            food = food,
+                            isFavorite = food.id in favoriteIds,
+                            activeMealSlot = activeMealSlot,
+                            isOpening = openingFoodId == food.id,
+                            onOpen = { openFoodDetails(food) },
+                            onQuickLog = {
+                                val entry = food.toFoodLogEntry(meal = activeMealSlot)
+                                onFoodLogged(entry, food)
+                                BodySoundHaptics.playClickSound(isSoundMuted)
+                            },
+                            onToggleFavorite = { onToggleFavorite(food) },
+                        )
+                    }
 
                     LazyColumn(
                         modifier = Modifier
@@ -1160,36 +1122,7 @@ fun FoodDatabaseScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         when {
-                            source == FoodSource.ONLINE && isOnlineLoading -> {
-                                item(key = "online_loading") {
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            CircularProgressIndicator(
-                                                color = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(32.dp),
-                                            )
-                                            Spacer(Modifier.height(8.dp))
-                                            Text(
-                                                "Searching Open Food Facts...",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            source == FoodSource.ONLINE && query.trim().length < 2 -> {
-                                item(key = "online_prompt") {
-                                    EmptyFoodState(
-                                        title = "Search Open Food Facts",
-                                        subtitle = "Type at least two characters or scan a barcode. Online results need an internet connection.",
-                                    )
-                                }
-                            }
-                            source == FoodSource.OFFLINE && isOfflineLoading && displayResults.isEmpty() -> {
+                            isOfflineLoading && displayResults.isEmpty() -> {
                                 item(key = "offline_loading") {
                                     Box(
                                         modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
@@ -1202,7 +1135,7 @@ fun FoodDatabaseScreen(
                                     }
                                 }
                             }
-                            source == FoodSource.OFFLINE && filter == FoodFilter.FAVORITES && enrichedFavorites.isEmpty() -> {
+                            filter == FoodFilter.FAVORITES && enrichedFavorites.isEmpty() -> {
                                 item(key = "empty_favorites") {
                                     EmptyFoodState(
                                         title = "No favorites yet",
@@ -1210,7 +1143,7 @@ fun FoodDatabaseScreen(
                                     )
                                 }
                             }
-                            source == FoodSource.OFFLINE && filter == FoodFilter.RECENT && enrichedRecents.isEmpty() -> {
+                            filter == FoodFilter.RECENT && enrichedRecents.isEmpty() -> {
                                 item(key = "empty_recents") {
                                     EmptyFoodState(
                                         title = "Nothing logged recently",
@@ -1218,19 +1151,40 @@ fun FoodDatabaseScreen(
                                     )
                                 }
                             }
-                            searchError != null && displayResults.isEmpty() -> {
+                            displayResults.isEmpty() && isOnlineLoading -> {
+                                item(key = "online_loading") {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            CircularProgressIndicator(
+                                                color = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(32.dp),
+                                            )
+                                            Spacer(Modifier.height(8.dp))
+                                            Text(
+                                                "Searching the catalog and Open Food Facts...",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            displayResults.isEmpty() && searchError != null -> {
                                 item(key = "empty_error") {
                                     EmptyFoodState(
-                                        title = if (source == FoodSource.ONLINE) "Open Food Facts unavailable" else "No results",
+                                        title = if (onlineSearchEnabled) "Open Food Facts unavailable" else "No results",
                                         subtitle = searchError!!,
-                                        actionLabel = if (source == FoodSource.ONLINE) "Try again" else "Search Open Food Facts",
-                                        onAction = {
-                                            if (source == FoodSource.ONLINE) {
+                                        actionLabel = if (onlineSearchEnabled) "Try again" else null,
+                                        onAction = if (onlineSearchEnabled) {
+                                            {
                                                 openFoodFactsClient?.clearSearchCache()
                                                 searchRetry++
-                                            } else {
-                                                source = FoodSource.ONLINE
                                             }
+                                        } else {
+                                            null
                                         },
                                     )
                                 }
@@ -1243,31 +1197,125 @@ fun FoodDatabaseScreen(
                                         } else {
                                             "No foods match \"$query\""
                                         },
-                                        subtitle = if (source == FoodSource.OFFLINE) {
-                                            "The curated library is bundled offline. Try Open Food Facts for branded items."
+                                        subtitle = if (onlineSearchEnabled) {
+                                            "Searched the offline catalog and Open Food Facts. Try a different spelling or scan the barcode."
                                         } else {
-                                            "Try a different spelling or scan the barcode."
+                                            "Try a different spelling or category, or scan the barcode."
                                         },
-                                        actionLabel = if (source == FoodSource.OFFLINE) "Search Open Food Facts" else null,
-                                        onAction = { source = FoodSource.ONLINE },
+                                        actionLabel = "Scan barcode",
+                                        onAction = { showScanner = true },
                                     )
                                 }
                             }
                             else -> {
-                                items(displayResults, key = { it.id }) { food ->
-                                    FoodDatabaseCard(
-                                        food = food,
-                                        isFavorite = food.id in favoriteIds,
-                                        activeMealSlot = activeMealSlot,
-                                        isOpening = openingFoodId == food.id,
-                                        onOpen = { openFoodDetails(food) },
-                                        onQuickLog = {
-                                            val entry = food.toFoodLogEntry(meal = activeMealSlot)
-                                            onFoodLogged(entry, food)
-                                            BodySoundHaptics.playClickSound(isSoundMuted)
-                                        },
-                                        onToggleFavorite = { onToggleFavorite(food) },
-                                    )
+                                items(localResults, key = { "local_${it.id}" }) { food ->
+                                    foodCard(food)
+                                }
+
+                                if (onlineSearchEnabled &&
+                                    (onlineExtra.isNotEmpty() || isOnlineLoading || searchError != null)
+                                ) {
+                                    item(key = "online_section") {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(top = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        ) {
+                                            Surface(
+                                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                                shape = RoundedCornerShape(8.dp),
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Language,
+                                                        contentDescription = null,
+                                                        tint = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.size(13.dp),
+                                                    )
+                                                    Text(
+                                                        text = "Open Food Facts",
+                                                        style = MaterialTheme.typography.labelSmall.copy(
+                                                            fontSize = 10.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                        ),
+                                                        color = MaterialTheme.colorScheme.primary,
+                                                    )
+                                                }
+                                            }
+                                            Text(
+                                                text = when {
+                                                    isOnlineLoading -> "Searching..."
+                                                    searchError != null -> "Unavailable"
+                                                    else -> "${onlineExtra.size} live result${if (onlineExtra.size == 1) "" else "s"}"
+                                                },
+                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                    }
+                                }
+
+                                items(onlineExtra, key = { "off_${it.id}" }) { food ->
+                                    foodCard(food)
+                                }
+
+                                if (onlineSearchEnabled && isOnlineLoading) {
+                                    item(key = "online_loading_footer") {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 8.dp),
+                                            horizontalArrangement = Arrangement.Center,
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            CircularProgressIndicator(
+                                                color = MaterialTheme.colorScheme.primary,
+                                                strokeWidth = 2.dp,
+                                                modifier = Modifier.size(16.dp),
+                                            )
+                                            Spacer(Modifier.width(8.dp))
+                                            Text(
+                                                text = "Searching packaged foods...",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                    }
+                                }
+
+                                if (onlineSearchEnabled && searchError != null && !isOnlineLoading) {
+                                    item(key = "online_error_footer") {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 2.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                        ) {
+                                            Text(
+                                                text = "Open Food Facts unavailable - showing local matches.",
+                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                                color = MaterialTheme.colorScheme.error,
+                                                maxLines = 2,
+                                                modifier = Modifier.weight(1f),
+                                            )
+                                            TextButton(
+                                                onClick = {
+                                                    openFoodFactsClient?.clearSearchCache()
+                                                    searchRetry++
+                                                },
+                                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                            ) {
+                                                Text("Retry", style = MaterialTheme.typography.labelSmall)
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1350,11 +1398,9 @@ private fun MealContextPill(
 @Composable
 private fun FoodActionStrip(
     isMealShowing: Boolean,
-    isOnline: Boolean,
     isMuted: Boolean,
     onFlip: () -> Unit,
     onScan: () -> Unit,
-    onToggleSource: () -> Unit,
     onToggleSound: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -1383,16 +1429,6 @@ private fun FoodActionStrip(
                 contentDescription = "Scan a barcode",
                 tint = MaterialTheme.colorScheme.primary,
                 onClick = onScan,
-                modifier = Modifier.weight(1f),
-            )
-            ActionDivider()
-            FoodActionButton(
-                icon = if (isOnline) Icons.Default.Language else Icons.Default.Restaurant,
-                label = if (isOnline) "Online" else "Offline",
-                contentDescription = "Toggle between offline whole foods and Open Food Facts",
-                tint = if (isOnline) AroTheme.macroColors.fat else MaterialTheme.colorScheme.primary,
-                isActive = isOnline,
-                onClick = onToggleSource,
                 modifier = Modifier.weight(1f),
             )
             ActionDivider()
@@ -2533,7 +2569,7 @@ private fun PortionPickerDialog(
                     val portionCal = preview.calories.roundToInt()
                     val newTotalCal = eatenCal + portionCal
                     val remainingAfter = (targetCal - newTotalCal).coerceAtLeast(0)
-                    val isOverBudget = newTotalCal > targetCal && targetCal > 0
+                    val isOverTarget = newTotalCal > targetCal && targetCal > 0
 
                     val targetProt = energyPlan?.macros?.proteinG ?: 150
                     val eatenProt = dayTotals?.proteinG?.roundToInt() ?: 0
@@ -2558,7 +2594,7 @@ private fun PortionPickerDialog(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
-                                    text = "DAILY BUDGET IMPACT",
+                                    text = "DAILY TARGET",
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontWeight = FontWeight.Bold,
                                         letterSpacing = 0.5.sp,
@@ -2566,16 +2602,16 @@ private fun PortionPickerDialog(
                                     color = MaterialTheme.colorScheme.primary,
                                 )
                                 Text(
-                                    text = if (isOverBudget) {
-                                        "+${newTotalCal - targetCal} kcal over budget"
+                                    text = if (isOverTarget) {
+                                        "+${newTotalCal - targetCal} kcal over target"
                                     } else {
-                                        "$remainingAfter kcal remaining"
+                                        "$remainingAfter kcal left"
                                     },
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 11.sp,
                                     ),
-                                    color = if (isOverBudget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = if (isOverTarget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
 
@@ -2604,7 +2640,7 @@ private fun PortionPickerDialog(
                                         modifier = Modifier
                                             .weight(portionRatio)
                                             .fillMaxHeight()
-                                            .background(if (isOverBudget) MaterialTheme.colorScheme.error else AroTheme.macroColors.calories),
+                                            .background(if (isOverTarget) MaterialTheme.colorScheme.error else AroTheme.macroColors.calories),
                                     )
                                 }
                                 if (remainderRatio > 0.005f) {

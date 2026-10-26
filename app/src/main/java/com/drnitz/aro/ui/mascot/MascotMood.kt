@@ -67,7 +67,7 @@ fun resolveMascotMood(
         return MascotMood.FASTING_ZEN
     }
 
-    // 2. Goal completion celebration (protein or calorie budget met)
+    // 2. Goal completion celebration (protein or calorie target met)
     val proteinGoal = state.energyPlan.macros.proteinG
     val proteinLogged = state.dayTotals.proteinG
     val targetCalories = state.energyPlan.targetCalories
@@ -199,7 +199,7 @@ fun getMascotCoaching(
         MascotMood.WELCOMING -> {
             MascotCoaching(
                 title = "Welcome! I'm Aro",
-                message = "Good morning! Today's budget is ${state.energyPlan.targetCalories} kcal with ${proteinTarget}g target protein. Let's make today count!",
+                message = "Good morning! Today's target is ${state.energyPlan.targetCalories} kcal with ${proteinTarget}g protein. Let's make today count!",
                 actionableTip = "Start your morning with 300ml of water and log your breakfast to ignite your daily streak.",
                 mood = mood,
             )
