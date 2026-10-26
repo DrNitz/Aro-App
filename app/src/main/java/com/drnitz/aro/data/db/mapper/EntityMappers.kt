@@ -111,9 +111,20 @@ private fun snapshotToCuratedFood(
 ): CuratedFoodItem {
     val factor = if (grams > 0.0) 100.0 / grams else 1.0
     fun valueOf(key: NutrientKey): Double = (columns.read(key) ?: 0.0) * factor
+    val unreported = NutrientKey.entries
+        .filter { columns.read(it) == null }
+        .map { it.name }
+        .toSet()
+    // Saved Open Food Facts snapshots keep the OFF id ("off-<barcode>"), so the barcode
+    // can be recovered to re-fetch the full label when the product is opened again.
+    val barcode = foodId
+        .takeIf { it.startsWith("off-") }
+        ?.removePrefix("off-")
+        ?.takeIf { it.length in 8..14 && it.all(Char::isDigit) }
 
     return CuratedFoodItem(
         id = foodId,
+        code = barcode,
         name = name,
         brand = brand,
         category = "Saved",
@@ -129,6 +140,8 @@ private fun snapshotToCuratedFood(
         calcium = valueOf(NutrientKey.CALCIUM),
         magnesium = valueOf(NutrientKey.MAGNESIUM),
         servingSize = 100.0,
+        unreportedNutrients = unreported,
+        dataSource = "Saved food snapshot",
     )
 }
 

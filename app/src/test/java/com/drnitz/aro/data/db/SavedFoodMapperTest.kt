@@ -5,7 +5,9 @@ import com.drnitz.aro.data.db.mapper.toFavoriteEntity
 import com.drnitz.aro.data.db.mapper.toRecentEntity
 import com.drnitz.aro.domain.model.CommonServing
 import com.drnitz.aro.domain.model.CuratedFoodItem
+import com.drnitz.aro.domain.model.NutrientKey
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -63,6 +65,21 @@ class SavedFoodMapperTest {
     }
 
     @Test
+    fun `open food facts snapshots recover the barcode for full-label reload`() {
+        val nutella = oats.copy(
+            id = "off-3017620422003",
+            code = "3017620422003",
+            name = "Nutella",
+        )
+
+        val restored = nutella.toFavoriteEntity().toCuratedFoodItem()
+
+        assertEquals("off-3017620422003", restored.id)
+        assertEquals("3017620422003", restored.code)
+        assertNull(oats.toFavoriteEntity().toCuratedFoodItem().code)
+    }
+
+    @Test
     fun `recent snapshot keeps the portion actually logged`() {
         val entity = oats.toRecentEntity(grams = 25.0, lastUsedAt = 2_000L)
 
@@ -76,7 +93,7 @@ class SavedFoodMapperTest {
     }
 
     @Test
-    fun `unknown nutrients do not crash and become zero`() {
+    fun `unknown nutrients do not crash and stay unreported after a snapshot`() {
         val sparse = CuratedFoodItem(
             id = "sparse",
             name = "Mystery Food",
@@ -84,6 +101,7 @@ class SavedFoodMapperTest {
             protein = 1.0,
             carbs = 2.0,
             fat = 3.0,
+            unreportedNutrients = setOf("FIBER", "SODIUM", "POTASSIUM", "CALCIUM", "MAGNESIUM"),
         )
 
         val restored = sparse.toFavoriteEntity().toCuratedFoodItem()
@@ -91,6 +109,8 @@ class SavedFoodMapperTest {
         assertEquals(100.0, restored.calories, 1e-6)
         assertEquals(0.0, restored.fiber, 1e-9)
         assertEquals(0.0, restored.sodium, 1e-9)
+        assertFalse(restored.isReported(NutrientKey.FIBER))
+        assertNull(restored.per100gNutrients[NutrientKey.FIBER].value)
         assertNull(restored.image)
     }
 }

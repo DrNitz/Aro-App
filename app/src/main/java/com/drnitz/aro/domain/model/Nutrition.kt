@@ -62,7 +62,15 @@ data class NutrientAmount(val value: Double?, val isEstimated: Boolean = false) 
     val orZero: Double get() = value ?: 0.0
 
     operator fun plus(other: NutrientAmount): NutrientAmount =
-        of(orZero + other.orZero, isEstimated || other.isEstimated || !isReported || !other.isReported)
+        if (!isReported && !other.isReported) {
+            // Nothing was reported on either side: the sum is unknown, not a known zero.
+            UNKNOWN
+        } else {
+            of(
+                orZero + other.orZero,
+                isEstimated || other.isEstimated || !isReported || !other.isReported,
+            )
+        }
 
     /** Scales a reported amount — e.g. converting a per-100 g value to a 150 g portion. */
     operator fun times(factor: Double): NutrientAmount =

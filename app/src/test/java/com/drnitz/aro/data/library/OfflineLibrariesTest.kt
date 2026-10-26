@@ -1,10 +1,12 @@
 package com.drnitz.aro.data.library
 
 import com.drnitz.aro.domain.model.MealSlot
+import com.drnitz.aro.domain.model.NutrientKey
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -78,6 +80,12 @@ class OfflineLibrariesTest {
         assertEquals(200.0, logEntry.grams, 0.01)
         assertEquals(330.0, logEntry.calories, 0.01)
         assertEquals(62.0, logEntry.proteinG, 0.01)
+
+        // Chicken has no potassium entry in the bundled library. That must stay
+        // "unreported" rather than silently becoming a known zero.
+        assertFalse(item.isReported(NutrientKey.POTASSIUM))
+        assertNull(logEntry.nutrients[NutrientKey.POTASSIUM].value)
+        assertEquals(0.0, logEntry.nutrients[NutrientKey.POTASSIUM].orZero, 0.0)
 
         // Barcode lookup
         val byBarcode = library.findByBarcode("raw-chicken-breast")

@@ -57,6 +57,28 @@ class NutritionTest {
     }
 
     @Test
+    fun `adding two unreported amounts stays unknown rather than a known zero`() {
+        val sum = NutrientAmount.UNKNOWN + NutrientAmount.UNKNOWN
+        assertFalse(sum.isReported)
+        assertFalse(sum.isEstimated)
+        assertEquals("—", sum.format())
+    }
+
+    @Test
+    fun `a day where no food reports calcium keeps calcium unknown`() {
+        val entry = NutrientTotals.ofAmounts(
+            mapOf(
+                NutrientKey.PROTEIN to NutrientAmount(3.0),
+                NutrientKey.CALCIUM to NutrientAmount.UNKNOWN,
+            ),
+        )
+        val day = entry + entry
+        assertEquals(6.0, day.proteinG, 0.0001)
+        assertFalse(day[NutrientKey.CALCIUM].isReported)
+        assertEquals(setOf(NutrientKey.PROTEIN), day.reportedKeys())
+    }
+
+    @Test
     fun `progress toward zero target is zero not infinity`() {
         assertEquals(0.0, NutrientAmount(100.0).progressToward(0.0), 0.0001)
         assertClose(0.5, NutrientAmount(50.0).progressToward(100.0))

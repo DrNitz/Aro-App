@@ -20,7 +20,13 @@
     },
     "nutriscore": "a",
     "nova": 1,
-    "image": "https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-eggs-large",
@@ -43,7 +49,13 @@
     },
     "nutriscore": "a",
     "nova": 1,
-    "image": "https://images.unsplash.com/photo-1506976785307-8732e854ad03?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1506976785307-8732e854ad03?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-egg-whites",
@@ -66,7 +78,13 @@
     },
     "nutriscore": "a",
     "nova": 1,
-    "image": "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-salmon-atlantic",
@@ -89,7 +107,13 @@
     },
     "nutriscore": "a",
     "nova": 1,
-    "image": "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-greek-yogurt-0",
@@ -112,7 +136,13 @@
     },
     "nutriscore": "a",
     "nova": 1,
-    "image": "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-whey-isolate",
@@ -135,7 +165,13 @@
     },
     "nutriscore": "a",
     "nova": 3,
-    "image": "https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-lean-ground-beef",
@@ -158,7 +194,13 @@
     },
     "nutriscore": "b",
     "nova": 1,
-    "image": "https://images.unsplash.com/photo-1588168333986-5078d3ae3976?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1588168333986-5078d3ae3976?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-tofu-firm",
@@ -181,7 +223,13 @@
     },
     "nutriscore": "a",
     "nova": 1,
-    "image": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-tuna-canned",
@@ -204,7 +252,13 @@
     },
     "nutriscore": "a",
     "nova": 2,
-    "image": "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-rolled-oats",
@@ -227,7 +281,13 @@
     },
     "nutriscore": "a",
     "nova": 1,
-    "image": "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-brown-rice",
@@ -250,7 +310,13 @@
     },
     "nutriscore": "a",
     "nova": 1,
-    "image": "https://images.unsplash.com/photo-1536304929831-ee1ca9d44906?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1536304929831-ee1ca9d44906?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-white-basmati-rice",
@@ -273,7 +339,13 @@
     },
     "nutriscore": "b",
     "nova": 1,
-    "image": "https://images.unsplash.com/photo-1516684732162-798a0062be99?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1516684732162-798a0062be99?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-sweet-potato",
@@ -296,7 +368,13 @@
     },
     "nutriscore": "a",
     "nova": 1,
-    "image": "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-whole-wheat-bread",
@@ -319,7 +397,13 @@
     },
     "nutriscore": "a",
     "nova": 3,
-    "image": "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-quinoa",
@@ -342,7 +426,13 @@
     },
     "nutriscore": "a",
     "nova": 1,
-    "image": "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-banana",
@@ -365,7 +455,13 @@
     },
     "nutriscore": "a",
     "nova": 1,
-    "image": "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-apple-gala",
@@ -388,7 +484,13 @@
     },
     "nutriscore": "a",
     "nova": 1,
-    "image": "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-blueberries",
@@ -411,7 +513,13 @@
     },
     "nutriscore": "a",
     "nova": 1,
-    "image": "https://images.unsplash.com/photo-1498557850523-fd3d118b962e?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1498557850523-fd3d118b962e?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-strawberries",
@@ -434,7 +542,13 @@
     },
     "nutriscore": "a",
     "nova": 1,
-    "image": "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-avocado",
@@ -457,7 +571,13 @@
     },
     "nutriscore": "a",
     "nova": 1,
-    "image": "https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-almonds-raw",
@@ -480,7 +600,13 @@
     },
     "nutriscore": "a",
     "nova": 1,
-    "image": "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-peanut-butter-natural",
@@ -503,7 +629,13 @@
     },
     "nutriscore": "a",
     "nova": 1,
-    "image": "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-extra-virgin-olive-oil",
@@ -526,7 +658,13 @@
     },
     "nutriscore": "c",
     "nova": 2,
-    "image": "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-broccoli",
@@ -549,7 +687,13 @@
     },
     "nutriscore": "a",
     "nova": 1,
-    "image": "https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-spinach-fresh",
@@ -572,7 +716,13 @@
     },
     "nutriscore": "a",
     "nova": 1,
-    "image": "https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-almond-milk-unsweetened",
@@ -595,7 +745,13 @@
     },
     "nutriscore": "b",
     "nova": 3,
-    "image": "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-whole-milk",
@@ -618,7 +774,13 @@
     },
     "nutriscore": "b",
     "nova": 1,
-    "image": "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=300&auto=format&fit=crop&q=60"
+    "image": "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=300&auto=format&fit=crop&q=60",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-nutella",
@@ -641,7 +803,13 @@
     },
     "nutriscore": "e",
     "nova": 4,
-    "image": "https://images.openfoodfacts.org/images/products/301/762/042/2003/front_en.551.400.jpg"
+    "image": "https://images.openfoodfacts.org/images/products/301/762/042/2003/front_en.551.400.jpg",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-coke-zero",
@@ -664,7 +832,13 @@
     },
     "nutriscore": "b",
     "nova": 4,
-    "image": "https://images.openfoodfacts.org/images/products/544/900/013/1805/front_en.111.400.jpg"
+    "image": "https://images.openfoodfacts.org/images/products/544/900/013/1805/front_en.111.400.jpg",
+    "unreportedNutrients": [
+      "SATURATED_FAT",
+      "POTASSIUM",
+      "CALCIUM",
+      "MAGNESIUM"
+    ]
   },
   {
     "id": "curated-roti-chapati",
