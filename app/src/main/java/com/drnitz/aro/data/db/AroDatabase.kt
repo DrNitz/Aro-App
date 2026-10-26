@@ -9,6 +9,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.drnitz.aro.data.db.dao.ConsultationDao
 import com.drnitz.aro.data.db.dao.DiaryDao
+import com.drnitz.aro.data.db.dao.ExerciseLibraryDao
 import com.drnitz.aro.data.db.dao.FastingDao
 import com.drnitz.aro.data.db.dao.FoodLibraryDao
 import com.drnitz.aro.data.db.dao.MedicationLogDao
@@ -18,9 +19,11 @@ import com.drnitz.aro.data.db.dao.VitalsDao
 import com.drnitz.aro.data.db.dao.WeightDao
 import com.drnitz.aro.data.db.dao.WorkoutDao
 import com.drnitz.aro.data.db.entity.ConsultationEntity
+import com.drnitz.aro.data.db.entity.CustomExerciseEntity
 import com.drnitz.aro.data.db.entity.CustomFoodEntity
 import com.drnitz.aro.data.db.entity.DayEntity
 import com.drnitz.aro.data.db.entity.FastingSessionEntity
+import com.drnitz.aro.data.db.entity.FavoriteExerciseEntity
 import com.drnitz.aro.data.db.entity.FavoriteFoodEntity
 import com.drnitz.aro.data.db.entity.FoodLogEntity
 import com.drnitz.aro.data.db.entity.MealTemplateEntity
@@ -69,6 +72,8 @@ import com.drnitz.aro.data.db.entity.WorkoutSetEntity
         PlanSeriesEntity::class,
         PlanCompletionEntity::class,
         MedicationLogEntity::class,
+        CustomExerciseEntity::class,
+        FavoriteExerciseEntity::class,
     ],
     version = AroDatabase.VERSION,
     exportSchema = true,
@@ -86,9 +91,10 @@ abstract class AroDatabase : RoomDatabase() {
     abstract fun consultationDao(): ConsultationDao
     abstract fun planDao(): PlanDao
     abstract fun medicationLogDao(): MedicationLogDao
+    abstract fun exerciseLibraryDao(): ExerciseLibraryDao
 
     companion object {
-        const val VERSION = 9
+        const val VERSION = 10
         const val NAME = "aro.db"
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -301,6 +307,49 @@ abstract class AroDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `custom_exercises` (
+                        `id` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `force` TEXT,
+                        `level` TEXT NOT NULL,
+                        `mechanic` TEXT,
+                        `equipment` TEXT,
+                        `primary_muscles` TEXT NOT NULL,
+                        `secondary_muscles` TEXT NOT NULL,
+                        `instructions` TEXT NOT NULL,
+                        `category` TEXT NOT NULL,
+                        `images` TEXT NOT NULL,
+                        `tips` TEXT NOT NULL,
+                        `met` REAL NOT NULL,
+                        `created_at` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_custom_exercises_name` ON `custom_exercises` (`name`)")
+
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `favorite_exercises` (
+                        `id` TEXT NOT NULL,
+                        `exercise_id` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `category` TEXT NOT NULL,
+                        `muscle` TEXT,
+                        `equipment` TEXT,
+                        `created_at` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_favorite_exercises_exercise_id` ON `favorite_exercises` (`exercise_id`)")
+            }
+        }
+
         @Volatile
         private var instance: AroDatabase? = null
 
@@ -321,6 +370,7 @@ abstract class AroDatabase : RoomDatabase() {
                     MIGRATION_6_7,
                     MIGRATION_7_8,
                     MIGRATION_8_9,
+                    MIGRATION_9_10,
                 )
                 .addCallback(object : Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) {

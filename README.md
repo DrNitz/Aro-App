@@ -57,3 +57,9 @@ Instrumented tests require a connected device or emulator:
 ## Privacy
 
 Health, nutrition, workout, and plan data stay in the on-device Room database. There is no account system or cloud sync.
+
+## Attributions & Data Sources
+
+- Exercise database powered by [Free Exercise DB](https://github.com/yuhonas/free-exercise-db) (Public Domain / The Unlicense) and [RepDB](https://repdb.co/) ("Exercise data by RepDB (repdb.co)", Free Tier with attribution).
+- Nutrition database powered by Open Food Facts and curated USDA data.
+

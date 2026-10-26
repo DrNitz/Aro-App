@@ -18,6 +18,7 @@ import com.drnitz.aro.domain.clinical.MissingMacroAuditor
 import com.drnitz.aro.domain.model.CuratedFoodItem
 import com.drnitz.aro.domain.model.DiaryDay
 import com.drnitz.aro.domain.model.EnergyBalance
+import com.drnitz.aro.domain.model.Exercise
 import com.drnitz.aro.domain.model.FoodLogEntry
 import com.drnitz.aro.domain.model.MacroTargets
 import com.drnitz.aro.domain.model.NutrientTotals
@@ -68,6 +69,8 @@ sealed interface MainScreenUiState {
         val recentFoods: List<CuratedFoodItem> = emptyList(),
         /** Device "today", captured with the state so the calendar and future checks agree. */
         val today: LocalDate = LocalDate.now(),
+        /** Trailing 7 days of workouts for volume heatmap rendering. */
+        val weeklyWorkouts: List<WorkoutLog> = emptyList(),
     ) : MainScreenUiState
 }
 
@@ -148,6 +151,8 @@ class MainScreenViewModel(
                     waterLogCount = waterLogs.size,
                     today = today,
                 )
+            }.combine(repository.observeWorkoutsInRange(date.minusDays(6), date)) { successState, weeklyWorkouts ->
+                successState.copy(weeklyWorkouts = weeklyWorkouts)
             }
         }
         .combine(repository.observeFavoriteFoods()) { state, favorites ->
@@ -211,6 +216,12 @@ class MainScreenViewModel(
             SharingStarted.WhileSubscribed(5000),
             PlanUiState.Loading,
         )
+
+    val customExercises: StateFlow<List<Exercise>> = repository.observeCustomExercises()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val favoriteExerciseIds: StateFlow<Set<String>> = repository.observeFavoriteExerciseIds()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
     fun selectDate(date: LocalDate) {
         selectedDateFlow.value = date
@@ -295,6 +306,24 @@ class MainScreenViewModel(
 
     suspend fun getLastWorkoutForExercise(exerciseName: String): WorkoutLog? =
         repository.getLastWorkoutForExercise(exerciseName)
+
+    fun toggleFavoriteExercise(exercise: Exercise) {
+        viewModelScope.launch {
+            repository.toggleFavoriteExercise(exercise)
+        }
+    }
+
+    fun saveCustomExercise(exercise: Exercise) {
+        viewModelScope.launch {
+            repository.saveCustomExercise(exercise)
+        }
+    }
+
+    fun deleteCustomExercise(id: String) {
+        viewModelScope.launch {
+            repository.deleteCustomExercise(id)
+        }
+    }
 
     fun toggleFavorite(food: CuratedFoodItem) {
         viewModelScope.launch {

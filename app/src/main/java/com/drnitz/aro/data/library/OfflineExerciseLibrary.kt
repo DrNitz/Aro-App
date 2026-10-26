@@ -52,14 +52,23 @@ class OfflineExerciseLibrary(
         }
     }
 
+    /**
+     * Returns all bundled exercises plus any user-created custom exercises (custom first).
+     */
+    suspend fun getAll(customExercises: List<Exercise> = emptyList()): List<Exercise> {
+        val bundled = getExercises()
+        return if (customExercises.isEmpty()) bundled else customExercises + bundled
+    }
+
     suspend fun search(
         query: String = "",
         muscle: String? = null,
         equipment: String? = null,
         level: String? = null,
         category: String? = null,
+        customExercises: List<Exercise> = emptyList(),
     ): List<Exercise> {
-        val all = getExercises()
+        val all = getAll(customExercises)
         val cleanQ = query.trim().lowercase()
         val cleanMuscle = muscle?.trim()?.lowercase()?.takeIf { it != "all" }
         val cleanEq = equipment?.trim()?.lowercase()?.takeIf { it != "all" }
@@ -79,8 +88,8 @@ class OfflineExerciseLibrary(
         }
     }
 
-    suspend fun getById(id: String): Exercise? {
-        return getExercises().find { it.id == id }
+    suspend fun getById(id: String, customExercises: List<Exercise> = emptyList()): Exercise? {
+        return customExercises.find { it.id == id } ?: getExercises().find { it.id == id }
     }
 
     suspend fun getMuscles(): List<String> {

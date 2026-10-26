@@ -3,6 +3,7 @@ package com.drnitz.aro.data.repository
 import com.drnitz.aro.domain.model.CuratedFoodItem
 import com.drnitz.aro.domain.model.DiaryDay
 import com.drnitz.aro.domain.model.DoctorConsultation
+import com.drnitz.aro.domain.model.Exercise
 import com.drnitz.aro.domain.model.FastingSession
 import com.drnitz.aro.domain.model.FoodLogEntry
 import com.drnitz.aro.domain.model.MedicationLog
@@ -166,6 +167,28 @@ interface AroRepository {
 
     /** Retrieves the most recent workout for [exerciseName], with its logged sets. */
     suspend fun getLastWorkoutForExercise(exerciseName: String): WorkoutLog? = null
+
+    /** Observes all workouts logged within [from] and [toInclusive], including all working sets. */
+    fun observeWorkoutsInRange(from: LocalDate, toInclusive: LocalDate): Flow<List<WorkoutLog>> = flowOf(emptyList())
+
+    /** Retrieves all workouts logged within [from] and [toInclusive], including all working sets. */
+    suspend fun getWorkoutsInRange(from: LocalDate, toInclusive: LocalDate): List<WorkoutLog> = emptyList()
+
+    // ---- Exercise Library (Custom & Favorites) ----------------------------
+
+    fun observeCustomExercises(): Flow<List<Exercise>> = flowOf(emptyList())
+
+    suspend fun getCustomExercises(): List<Exercise> = emptyList()
+
+    suspend fun saveCustomExercise(exercise: Exercise) {}
+
+    suspend fun deleteCustomExercise(id: String) {}
+
+    fun observeFavoriteExerciseIds(): Flow<Set<String>> = flowOf(emptySet())
+
+    suspend fun isFavoriteExercise(exerciseId: String): Boolean = false
+
+    suspend fun toggleFavoriteExercise(exercise: Exercise) {}
 
     // ---- Weight -----------------------------------------------------------
 

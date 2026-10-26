@@ -57,6 +57,14 @@ interface WorkoutDao {
     fun observeWorkoutsBetween(from: Long, to: Long): Flow<List<WorkoutEntity>>
 
     @Transaction
+    @Query("SELECT * FROM workouts WHERE epoch_day BETWEEN :from AND :to ORDER BY logged_at ASC")
+    fun observeWorkoutsWithSetsBetween(from: Long, to: Long): Flow<List<WorkoutWithSets>>
+
+    @Transaction
+    @Query("SELECT * FROM workouts WHERE epoch_day BETWEEN :from AND :to ORDER BY logged_at ASC")
+    suspend fun workoutsWithSetsBetween(from: Long, to: Long): List<WorkoutWithSets>
+
+    @Transaction
     @Query("SELECT * FROM workouts WHERE id = :id LIMIT 1")
     suspend fun findWorkout(id: String): WorkoutWithSets?
 

@@ -548,6 +548,7 @@ fun PlanExercisePickerDialog(
     existing: PlanItem? = null,
     exerciseLibrary: OfflineExerciseLibrary,
     userWeightKg: Double,
+    customExercises: List<Exercise> = emptyList(),
     onDismiss: () -> Unit,
     onSave: (PlanItem) -> Unit,
 ) {
@@ -573,9 +574,9 @@ fun PlanExercisePickerDialog(
     var repeatUntil by remember { mutableStateOf(existing?.repeatUntil) }
     var reminderEnabled by remember { mutableStateOf(existing?.reminderEnabled ?: true) }
 
-    LaunchedEffect(query, mode) {
+    LaunchedEffect(query, mode, customExercises) {
         if (mode == ExerciseMode.STRENGTH) {
-            strengthResults = exerciseLibrary.search(query = query)
+            strengthResults = exerciseLibrary.search(query = query, customExercises = customExercises)
         }
     }
 
@@ -894,7 +895,7 @@ fun PlanExercisePickerDialog(
                                             exerciseId = exercise.id,
                                             isStrength = true,
                                             durationMinutes = duration,
-                                            met = 6.0,
+                                            met = exercise.met ?: 6.0,
                                             category = exercise.category,
                                             muscle = exercise.primaryMuscles.firstOrNull(),
                                             equipment = exercise.equipment,
@@ -935,6 +936,7 @@ private fun PlannedExercise.toPickerExercise(title: String): Exercise = Exercise
     category = category,
     primaryMuscles = listOfNotNull(muscle),
     equipment = equipment,
+    met = met,
 )
 
 private fun PlannedExercise.toPickerActivity(title: String): MetActivity = MetActivity(

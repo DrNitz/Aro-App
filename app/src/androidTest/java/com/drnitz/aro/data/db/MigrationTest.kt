@@ -410,7 +410,65 @@ class MigrationTest {
     }
 
     @Test
-    fun allMigrations_from1To9_preservesDataIntegrity() {
+    fun migration9To10_createsCustomAndFavoriteExerciseTables() {
+        helper.createDatabase(testDbName, 9).apply {
+            execSQL(
+                """
+                INSERT INTO fasting_sessions (
+                    id, epoch_day, target_hours, started_at, ended_at, created_at, note
+                ) VALUES (
+                    'fast-v9', 19010, 16, 1000, 2000, 1000, 'Note from v9'
+                )
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(testDbName, 10, true, AroDatabase.MIGRATION_9_10)
+
+        // Verify previous table is untouched
+        val noteCursor = db.query("SELECT note FROM fasting_sessions WHERE id = 'fast-v9'")
+        assertTrue(noteCursor.moveToFirst())
+        assertEquals("Note from v9", noteCursor.getString(0))
+        noteCursor.close()
+
+        // Verify custom_exercises table is created and operational
+        db.execSQL(
+            """
+            INSERT INTO custom_exercises (
+                id, name, force, level, mechanic, equipment, primary_muscles,
+                secondary_muscles, instructions, category, images, tips, met, created_at
+            ) VALUES (
+                'custom-1', 'My Custom Pushup', 'push', 'beginner', 'compound',
+                'body only', 'chest', 'triceps', 'Push up cleanly', 'strength', '', '', 6.0, 1000
+            )
+            """.trimIndent(),
+        )
+        val customCursor = db.query("SELECT name, met FROM custom_exercises WHERE id = 'custom-1'")
+        assertTrue(customCursor.moveToFirst())
+        assertEquals("My Custom Pushup", customCursor.getString(0))
+        assertEquals(6.0, customCursor.getDouble(1), 0.001)
+        customCursor.close()
+
+        // Verify favorite_exercises table is created and operational
+        db.execSQL(
+            """
+            INSERT INTO favorite_exercises (
+                id, exercise_id, name, category, muscle, equipment, created_at
+            ) VALUES (
+                'fav-1', 'custom-1', 'My Custom Pushup', 'strength', 'chest', 'body only', 1000
+            )
+            """.trimIndent(),
+        )
+        val favCursor = db.query("SELECT exercise_id, name FROM favorite_exercises WHERE id = 'fav-1'")
+        assertTrue(favCursor.moveToFirst())
+        assertEquals("custom-1", favCursor.getString(0))
+        assertEquals("My Custom Pushup", favCursor.getString(1))
+        favCursor.close()
+    }
+
+    @Test
+    fun allMigrations_from1To10_preservesDataIntegrity() {
         helper.createDatabase(testDbName, 1).apply {
             execSQL(
                 """
@@ -448,7 +506,7 @@ class MigrationTest {
 
         val db = helper.runMigrationsAndValidate(
             testDbName,
-            9,
+            10,
             true,
             AroDatabase.MIGRATION_1_2,
             AroDatabase.MIGRATION_2_3,
@@ -458,6 +516,7 @@ class MigrationTest {
             AroDatabase.MIGRATION_6_7,
             AroDatabase.MIGRATION_7_8,
             AroDatabase.MIGRATION_8_9,
+            AroDatabase.MIGRATION_9_10,
         )
 
         // Verify original profile

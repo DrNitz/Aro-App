@@ -8,6 +8,7 @@ import com.drnitz.aro.data.repository.DayTotals
 import com.drnitz.aro.data.repository.ProfileSettings
 import com.drnitz.aro.domain.model.DiaryDay
 import com.drnitz.aro.domain.model.DoctorConsultation
+import com.drnitz.aro.domain.model.Exercise
 import com.drnitz.aro.domain.model.FoodLogEntry
 import com.drnitz.aro.domain.model.MealSlot
 import com.drnitz.aro.domain.model.NutrientKey
@@ -543,6 +544,58 @@ class MainScreenViewModelTest {
             success.upcomingSeries.map { it.id },
         )
     }
+
+    @Test
+    fun customExercises_savedObservedAndDeleted() = runTest {
+        val repo = FakeAroRepository()
+        val viewModel = MainScreenViewModel(repo, dateProvider)
+
+        val customEx = Exercise(
+            id = "custom-press-1",
+            name = "Incline Machine Press",
+            category = "strength",
+            equipment = "machine",
+            primaryMuscles = listOf("chest"),
+            tips = listOf("Control the descent"),
+            met = 6.0,
+            isCustom = true,
+        )
+
+        viewModel.saveCustomExercise(customEx)
+
+        val customList = viewModel.customExercises.first { it.isNotEmpty() }
+        assertEquals(1, customList.size)
+        assertEquals("Incline Machine Press", customList.first().name)
+        assertTrue(customList.first().isCustom)
+
+        viewModel.deleteCustomExercise(customEx.id)
+        val afterDelete = viewModel.customExercises.first { it.isEmpty() }
+        assertTrue(afterDelete.isEmpty())
+    }
+
+    @Test
+    fun favoriteExercises_toggledAndObserved() = runTest {
+        val repo = FakeAroRepository()
+        val viewModel = MainScreenViewModel(repo, dateProvider)
+
+        val exercise = Exercise(
+            id = "bench-press",
+            name = "Barbell Bench Press",
+            category = "strength",
+            equipment = "barbell",
+            primaryMuscles = listOf("chest"),
+        )
+
+        // Toggle favorite on
+        viewModel.toggleFavoriteExercise(exercise)
+        val favs = viewModel.favoriteExerciseIds.first { it.isNotEmpty() }
+        assertTrue(favs.contains("bench-press"))
+
+        // Toggle favorite off
+        viewModel.toggleFavoriteExercise(exercise)
+        val emptyFavs = viewModel.favoriteExerciseIds.first { it.isEmpty() }
+        assertFalse(emptyFavs.contains("bench-press"))
+    }
 }
 
 private fun plannedFood(
@@ -582,6 +635,8 @@ private class FakeAroRepository(
     val planItemsFlow = MutableStateFlow<List<PlanItem>>(emptyList())
     val planCompletionsFlow = MutableStateFlow<Map<Pair<String, LocalDate>, Instant>>(emptyMap())
     val planSkippedFlow = MutableStateFlow<Set<Pair<String, LocalDate>>>(emptySet())
+    val customExercisesFlow = MutableStateFlow<List<Exercise>>(emptyList())
+    val favoriteExerciseIdsFlow = MutableStateFlow<Set<String>>(emptySet())
 
     private fun getDayFlow(date: LocalDate): MutableStateFlow<DiaryDay> =
         diaryDays.getOrPut(date) { MutableStateFlow(DiaryDay(date)) }
@@ -728,6 +783,22 @@ private class FakeAroRepository(
         }
     }
 
+    override fun observeWorkoutsInRange(from: LocalDate, toInclusive: LocalDate): Flow<List<WorkoutLog>> {
+        val days = generateSequence(from) { it.plusDays(1) }
+            .takeWhile { !it.isAfter(toInclusive) }
+            .map { getDayFlow(it) }
+            .toList()
+        return if (days.isEmpty()) flowOf(emptyList())
+        else combine(days) { dayArray -> dayArray.flatMap { it.workouts } }
+    }
+
+    override suspend fun getWorkoutsInRange(from: LocalDate, toInclusive: LocalDate): List<WorkoutLog> {
+        return generateSequence(from) { it.plusDays(1) }
+            .takeWhile { !it.isAfter(toInclusive) }
+            .flatMap { diaryDays[it]?.value?.workouts.orEmpty() }
+            .toList()
+    }
+
     override fun observeWeightHistory(): Flow<List<Pair<LocalDate, Double>>> = flowOf(emptyList())
 
     override suspend fun logWeight(date: LocalDate, weightKg: Double) {}
@@ -753,6 +824,24 @@ private class FakeAroRepository(
     override suspend fun logConsultation(consultation: DoctorConsultation) {}
     override suspend fun deleteConsultation(id: String) {}
     override suspend fun getConsultationsInRange(from: LocalDate, toInclusive: LocalDate): List<DoctorConsultation> = emptyList()
+
+    override fun observeCustomExercises(): Flow<List<Exercise>> = customExercisesFlow
+    override suspend fun getCustomExercises(): List<Exercise> = customExercisesFlow.value
+    override suspend fun saveCustomExercise(exercise: Exercise) {
+        customExercisesFlow.value = customExercisesFlow.value.filter { it.id != exercise.id } + exercise
+    }
+    override suspend fun deleteCustomExercise(id: String) {
+        customExercisesFlow.value = customExercisesFlow.value.filter { it.id != id }
+    }
+    override fun observeFavoriteExerciseIds(): Flow<Set<String>> = favoriteExerciseIdsFlow
+    override suspend fun isFavoriteExercise(exerciseId: String): Boolean = favoriteExerciseIdsFlow.value.contains(exerciseId)
+    override suspend fun toggleFavoriteExercise(exercise: Exercise) {
+        favoriteExerciseIdsFlow.value = if (favoriteExerciseIdsFlow.value.contains(exercise.id)) {
+            favoriteExerciseIdsFlow.value - exercise.id
+        } else {
+            favoriteExerciseIdsFlow.value + exercise.id
+        }
+    }
 }
 
 private class FakePlanReminderScheduler : PlanReminderScheduler {

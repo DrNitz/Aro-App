@@ -8,6 +8,9 @@ import com.drnitz.aro.data.db.entity.DayEntity
 import com.drnitz.aro.data.db.entity.FastingSessionEntity
 import com.drnitz.aro.data.db.entity.PlanCompletionEntity
 import com.drnitz.aro.data.db.entity.WaterLogEntity
+import com.drnitz.aro.data.db.entity.toCustomEntity
+import com.drnitz.aro.data.db.entity.toExercise
+import com.drnitz.aro.data.db.entity.toFavoriteEntity
 import com.drnitz.aro.data.db.mapper.buildDiaryDay
 import com.drnitz.aro.data.db.mapper.logWeight
 import com.drnitz.aro.data.db.mapper.planOccurrencesForDay
@@ -20,6 +23,7 @@ import com.drnitz.aro.data.db.mapper.toRecentEntity
 import com.drnitz.aro.domain.model.CuratedFoodItem
 import com.drnitz.aro.domain.model.DiaryDay
 import com.drnitz.aro.domain.model.DoctorConsultation
+import com.drnitz.aro.domain.model.Exercise
 import com.drnitz.aro.domain.model.FastingSession
 import com.drnitz.aro.domain.model.FoodLogEntry
 import com.drnitz.aro.domain.model.MealSlot
@@ -67,6 +71,7 @@ class RoomAroRepository(
     private val foodLibraryDao get() = database.foodLibraryDao()
     private val planDao get() = database.planDao()
     private val medicationLogDao get() = database.medicationLogDao()
+    private val exerciseLibraryDao get() = database.exerciseLibraryDao()
 
     // ---- Profile ----------------------------------------------------------
 
@@ -469,6 +474,40 @@ class RoomAroRepository(
 
     override suspend fun getLastWorkoutForExercise(exerciseName: String): WorkoutLog? =
         workoutDao.findLastWorkoutForExercise(exerciseName)?.toDomain()
+
+    override fun observeWorkoutsInRange(from: LocalDate, toInclusive: LocalDate): Flow<List<WorkoutLog>> =
+        workoutDao.observeWorkoutsWithSetsBetween(from.toEpochDay(), toInclusive.toEpochDay())
+            .map { list -> list.map { it.toDomain() } }
+
+    override suspend fun getWorkoutsInRange(from: LocalDate, toInclusive: LocalDate): List<WorkoutLog> =
+        workoutDao.workoutsWithSetsBetween(from.toEpochDay(), toInclusive.toEpochDay())
+            .map { it.toDomain() }
+
+    // ---- Exercise Library (Custom & Favorites) ----------------------------
+
+    override fun observeCustomExercises(): Flow<List<Exercise>> =
+        exerciseLibraryDao.observeCustomExercises().map { list -> list.map { it.toExercise() } }
+
+    override suspend fun getCustomExercises(): List<Exercise> =
+        exerciseLibraryDao.getCustomExercises().map { it.toExercise() }
+
+    override suspend fun saveCustomExercise(exercise: Exercise) {
+        exerciseLibraryDao.upsertCustomExercise(exercise.toCustomEntity())
+    }
+
+    override suspend fun deleteCustomExercise(id: String) {
+        exerciseLibraryDao.deleteCustomExercise(id)
+    }
+
+    override fun observeFavoriteExerciseIds(): Flow<Set<String>> =
+        exerciseLibraryDao.observeFavoriteExerciseIds().map { it.toSet() }
+
+    override suspend fun isFavoriteExercise(exerciseId: String): Boolean =
+        exerciseLibraryDao.isFavoriteExercise(exerciseId)
+
+    override suspend fun toggleFavoriteExercise(exercise: Exercise) {
+        exerciseLibraryDao.toggleFavoriteExercise(exercise.toFavoriteEntity())
+    }
 
     // ---- Weight -----------------------------------------------------------
 

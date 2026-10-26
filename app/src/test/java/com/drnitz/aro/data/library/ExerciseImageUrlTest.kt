@@ -14,6 +14,12 @@ class ExerciseImageUrlTest {
         images = listOf("Barbell_Bench_Press/0.jpg", "Barbell_Bench_Press/1.jpg"),
     )
 
+    private val repDbExercise = Exercise(
+        id = "ab-wheel-rollout",
+        name = "Ab Wheel Rollout",
+        images = listOf("repdb/images/flat/ab-wheel-rollout-start.webp", "repdb/images/flat/ab-wheel-rollout-peak.webp"),
+    )
+
     @Test
     fun `relative database paths become absolute GitHub URLs`() {
         assertEquals(
@@ -23,6 +29,18 @@ class ExerciseImageUrlTest {
         assertEquals(
             "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Bench_Press/1.jpg",
             exercise.imageUrlAt(1),
+        )
+    }
+
+    @Test
+    fun `repdb paths stream from RepDB GitHub repository`() {
+        assertEquals(
+            "https://raw.githubusercontent.com/RepDB/exercise-dataset/main/images/flat/ab-wheel-rollout-start.webp",
+            repDbExercise.imageUrlAt(0),
+        )
+        assertEquals(
+            "https://raw.githubusercontent.com/RepDB/exercise-dataset/main/images/flat/ab-wheel-rollout-peak.webp",
+            repDbExercise.imageUrlAt(1),
         )
     }
 

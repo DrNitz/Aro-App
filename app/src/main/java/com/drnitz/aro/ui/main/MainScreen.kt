@@ -187,6 +187,8 @@ fun MainScreen(
 
     val state by vm.uiState.collectAsStateWithLifecycle()
     val planState by vm.planState.collectAsStateWithLifecycle()
+    val customExercises by vm.customExercises.collectAsStateWithLifecycle()
+    val favoriteExerciseIds by vm.favoriteExerciseIds.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(planDeepLink?.requestId) {
@@ -264,6 +266,11 @@ fun MainScreen(
                 onSkipPlanOccurrence = vm::skipPlanOccurrence,
                 onUncompletePlanOccurrence = vm::uncompletePlanOccurrence,
                 onLoadPreviousWorkout = vm::getLastWorkoutForExercise,
+                customExercises = customExercises,
+                favoriteExerciseIds = favoriteExerciseIds,
+                onToggleFavoriteExercise = vm::toggleFavoriteExercise,
+                onSaveCustomExercise = vm::saveCustomExercise,
+                onDeleteCustomExercise = vm::deleteCustomExercise,
                 onItemClick = onItemClick,
                 modifier = modifier,
             )
@@ -308,6 +315,11 @@ internal fun MainScreenContent(
     onSkipPlanOccurrence: (String, LocalDate) -> Unit = { _, _ -> },
     onUncompletePlanOccurrence: (String, LocalDate) -> Unit = { _, _ -> },
     onLoadPreviousWorkout: (suspend (String) -> WorkoutLog?)? = null,
+    customExercises: List<Exercise> = emptyList(),
+    favoriteExerciseIds: Set<String> = emptySet(),
+    onToggleFavoriteExercise: (Exercise) -> Unit = {},
+    onSaveCustomExercise: (Exercise) -> Unit = {},
+    onDeleteCustomExercise: (String) -> Unit = {},
     onItemClick: (NavKey) -> Unit = {},
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
@@ -423,6 +435,7 @@ internal fun MainScreenContent(
                             onOpenPlan = { showPlanView = true },
                             onOpenNotifications = { showNotificationSettingsDialog = true },
                             onLoadPreviousWorkout = onLoadPreviousWorkout,
+                            customExercises = customExercises,
                             onItemClick = onItemClick,
                         )
                     }
@@ -496,6 +509,12 @@ internal fun MainScreenContent(
                                 }
                             },
                             onLoadPreviousWorkout = onLoadPreviousWorkout,
+                            customExercises = customExercises,
+                            favoriteExerciseIds = favoriteExerciseIds,
+                            onToggleFavoriteExercise = onToggleFavoriteExercise,
+                            onSaveCustomExercise = onSaveCustomExercise,
+                            onDeleteCustomExercise = onDeleteCustomExercise,
+                            weeklyWorkouts = state.weeklyWorkouts,
                         )
                     } else {
                         MissingLibrary(stringResource(R.string.library_exercise_loading))
@@ -714,6 +733,7 @@ private fun DiaryTabContent(
     onOpenPlan: () -> Unit = {},
     onOpenNotifications: () -> Unit = {},
     onLoadPreviousWorkout: (suspend (String) -> WorkoutLog?)? = null,
+    customExercises: List<Exercise> = emptyList(),
     onItemClick: (NavKey) -> Unit = {},
 ) {
     var addFoodSlot by remember { mutableStateOf<MealSlot?>(null) }
@@ -937,6 +957,7 @@ private fun DiaryTabContent(
                 targetDateLabel = state.formattedDate,
                 targetDateIsToday = state.isToday,
                 onLoadPreviousWorkout = onLoadPreviousWorkout,
+                customExercises = customExercises,
                 onDismiss = { showLogWorkoutDialog = false },
                 onWorkoutLogged = { workout ->
                     onLogWorkout(workout)
@@ -967,6 +988,8 @@ private fun DiaryTabContent(
                     initialSets = workout.sets.map { it.copy(isCompleted = false) },
                     targetDateLabel = state.formattedDate,
                     targetDateIsToday = state.isToday,
+                    onLoadPreviousWorkout = onLoadPreviousWorkout,
+                    customExercises = customExercises,
                     onDismiss = { duplicatingWorkout = null },
                     onWorkoutLogged = { newWorkout ->
                         onLogWorkout(newWorkout)
@@ -983,6 +1006,7 @@ private fun DiaryTabContent(
                 targetDate = state.selectedDate,
                 exerciseLibrary = exerciseLibrary,
                 userWeightKg = state.profile.weightKg,
+                customExercises = customExercises,
                 onDismiss = { showPlanExercisePicker = false },
                 onSave = { item ->
                     onSavePlanItem(item)

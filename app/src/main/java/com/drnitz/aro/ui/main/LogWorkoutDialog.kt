@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.SystemClock
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,6 +33,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -39,12 +41,14 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Timer
@@ -74,6 +78,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -182,6 +187,7 @@ internal fun LogWorkoutDialog(
     targetDateIsToday: Boolean = true,
     cardioActionLabel: String = "Save Cardio Workout",
     onLoadPreviousWorkout: (suspend (String) -> WorkoutLog?)? = null,
+    customExercises: List<Exercise> = emptyList(),
     onDismiss: () -> Unit,
     onWorkoutLogged: (WorkoutLog) -> Unit,
 ) {
@@ -385,10 +391,11 @@ internal fun LogWorkoutDialog(
         listOf("All", "Running", "Walking", "Cycling", "Swimming", "Gym & Strength", "Conditioning", "Sports", "Mind & Body", "Outdoors")
     }
 
-    LaunchedEffect(exerciseQuery, selectedMuscle) {
+    LaunchedEffect(exerciseQuery, selectedMuscle, customExercises) {
         exerciseResults = exerciseLibrary.search(
             query = exerciseQuery,
             muscle = if (selectedMuscle == "All") null else selectedMuscle,
+            customExercises = customExercises,
         )
     }
 
@@ -643,7 +650,7 @@ internal fun LogWorkoutDialog(
                             ) {
                                 Text(
                                     text = "WORKING SETS (${sets.size})",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -653,27 +660,27 @@ internal fun LogWorkoutDialog(
                                             val cloned = lastSet?.duplicate() ?: SetEntry(weightKg = 60.0, reps = 10)
                                             sets.add(cloned)
                                         },
-                                        modifier = Modifier.heightIn(min = 36.dp),
-                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                        modifier = Modifier.height(34.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
                                         shape = RoundedCornerShape(8.dp),
                                     ) {
-                                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(14.dp))
+                                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(13.dp))
                                         Spacer(Modifier.width(4.dp))
-                                        Text("Duplicate", style = MaterialTheme.typography.labelSmall)
+                                        Text("Duplicate", style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp))
                                     }
 
-                                    OutlinedButton(
+                                    Button(
                                         onClick = {
                                             val lastSet = sets.lastOrNull()
                                             sets.add(SetEntry(weightKg = lastSet?.weightKg ?: 60.0, reps = lastSet?.reps ?: 10))
                                         },
-                                        modifier = Modifier.heightIn(min = 36.dp),
-                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                        modifier = Modifier.height(34.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
                                         shape = RoundedCornerShape(8.dp),
                                     ) {
-                                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(15.dp))
+                                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
                                         Spacer(Modifier.width(4.dp))
-                                        Text("Add Set", style = MaterialTheme.typography.labelSmall)
+                                        Text("Add Set", style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold))
                                     }
                                 }
                             }
@@ -689,12 +696,20 @@ internal fun LogWorkoutDialog(
                                 items(sets.size, key = { it }) { index ->
                                     val currentSet = sets[index]
                                     Card(
-                                        shape = RoundedCornerShape(12.dp),
+                                        shape = RoundedCornerShape(14.dp),
                                         colors = CardDefaults.cardColors(
                                             containerColor = if (currentSet.isCompleted) {
-                                                MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f)
+                                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.22f)
                                             } else {
                                                 MaterialTheme.colorScheme.surfaceContainer
+                                            },
+                                        ),
+                                        border = BorderStroke(
+                                            width = 1.dp,
+                                            color = if (currentSet.isCompleted) {
+                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                            } else {
+                                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
                                             },
                                         ),
                                         modifier = Modifier.fillMaxWidth(),
@@ -703,15 +718,257 @@ internal fun LogWorkoutDialog(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .padding(horizontal = 10.dp, vertical = 8.dp),
-                                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                                            verticalArrangement = Arrangement.spacedBy(8.dp),
                                         ) {
+                                            // TOP ROW: Set Badge + Live Metrics (Volume, 1RM) + Action Icons (Plate Calc, Duplicate, Delete)
                                             Row(
                                                 modifier = Modifier.fillMaxWidth(),
                                                 verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
                                             ) {
-                                                // Checkmark completion toggle
-                                                IconButton(
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                ) {
+                                                    Surface(
+                                                        color = if (currentSet.isCompleted) {
+                                                            MaterialTheme.colorScheme.primary
+                                                        } else {
+                                                            MaterialTheme.colorScheme.surfaceContainerHighest
+                                                        },
+                                                        shape = RoundedCornerShape(6.dp),
+                                                    ) {
+                                                        Text(
+                                                            text = "SET ${index + 1}",
+                                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                                fontWeight = FontWeight.Bold,
+                                                                fontSize = 10.sp,
+                                                                letterSpacing = 0.5.sp,
+                                                            ),
+                                                            color = if (currentSet.isCompleted) {
+                                                                MaterialTheme.colorScheme.onPrimary
+                                                            } else {
+                                                                MaterialTheme.colorScheme.onSurface
+                                                            },
+                                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                                        )
+                                                    }
+
+                                                    val setVolume = currentSet.volumeKg.roundToInt()
+                                                    val set1Rm = OneRepMaxCalculator.estimate(currentSet.weightKg, currentSet.reps)
+                                                    Text(
+                                                        text = "${setVolume}kg vol" + (if (set1Rm != null) " • 1RM ${set1Rm.oneRepMaxKg.roundToInt()}kg" else ""),
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    )
+                                                }
+
+                                                // Quick Actions
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                                ) {
+                                                    IconButton(
+                                                        onClick = {
+                                                            plateCalculatorTargetWeight = currentSet.weightKg
+                                                            plateCalculatorSetIndex = index
+                                                        },
+                                                        modifier = Modifier.size(28.dp),
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.FitnessCenter,
+                                                            contentDescription = "Barbell plate calculator",
+                                                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+                                                            modifier = Modifier.size(15.dp),
+                                                        )
+                                                    }
+
+                                                    IconButton(
+                                                        onClick = {
+                                                            val clone = currentSet.duplicate()
+                                                            sets.add(index + 1, clone)
+                                                        },
+                                                        modifier = Modifier.size(28.dp),
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.ContentCopy,
+                                                            contentDescription = "Duplicate set",
+                                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                            modifier = Modifier.size(14.dp),
+                                                        )
+                                                    }
+
+                                                    if (sets.size > 1) {
+                                                        IconButton(
+                                                            onClick = { sets.removeAt(index) },
+                                                            modifier = Modifier.size(28.dp),
+                                                        ) {
+                                                            Icon(
+                                                                imageVector = Icons.Default.Close,
+                                                                contentDescription = "Remove set",
+                                                                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.75f),
+                                                                modifier = Modifier.size(14.dp),
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            // BOTTOM ROW: Weight Stepper Input + Reps Stepper Input + Prominent Big Completion Button!
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            ) {
+                                                // WEIGHT STEPPER CARD
+                                                Surface(
+                                                    shape = RoundedCornerShape(10.dp),
+                                                    color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.65f),
+                                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
+                                                    modifier = Modifier.weight(1.3f),
+                                                ) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        modifier = Modifier.padding(horizontal = 2.dp, vertical = 2.dp),
+                                                    ) {
+                                                        IconButton(
+                                                            onClick = {
+                                                                val newWeight = (currentSet.weightKg - 2.5).coerceAtLeast(0.0)
+                                                                sets[index] = currentSet.copy(weightKg = newWeight)
+                                                            },
+                                                            modifier = Modifier.size(32.dp),
+                                                        ) {
+                                                            Icon(
+                                                                imageVector = Icons.Default.Remove,
+                                                                contentDescription = "Decrease weight by 2.5kg",
+                                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                                modifier = Modifier.size(15.dp),
+                                                            )
+                                                        }
+
+                                                        Column(
+                                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                                            modifier = Modifier.weight(1f),
+                                                        ) {
+                                                            BasicTextField(
+                                                                value = if (currentSet.weightKg == 0.0) "" else {
+                                                                    if (currentSet.weightKg % 1.0 == 0.0) currentSet.weightKg.roundToInt().toString()
+                                                                    else currentSet.weightKg.toString()
+                                                                },
+                                                                onValueChange = { str ->
+                                                                    val clean = str.filter { it.isDigit() || it == '.' }
+                                                                    val w = clean.toDoubleOrNull() ?: 0.0
+                                                                    sets[index] = currentSet.copy(weightKg = w)
+                                                                },
+                                                                singleLine = true,
+                                                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                                                textStyle = MaterialTheme.typography.titleMedium.copy(
+                                                                    fontWeight = FontWeight.Bold,
+                                                                    textAlign = TextAlign.Center,
+                                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                                    fontSize = 15.sp,
+                                                                ),
+                                                                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                                                                modifier = Modifier.fillMaxWidth(),
+                                                            )
+                                                            Text(
+                                                                text = "kg",
+                                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                            )
+                                                        }
+
+                                                        IconButton(
+                                                            onClick = {
+                                                                val newWeight = currentSet.weightKg + 2.5
+                                                                sets[index] = currentSet.copy(weightKg = newWeight)
+                                                            },
+                                                            modifier = Modifier.size(32.dp),
+                                                        ) {
+                                                            Icon(
+                                                                imageVector = Icons.Default.Add,
+                                                                contentDescription = "Increase weight by 2.5kg",
+                                                                tint = MaterialTheme.colorScheme.primary,
+                                                                modifier = Modifier.size(15.dp),
+                                                            )
+                                                        }
+                                                    }
+                                                }
+
+                                                // REPS STEPPER CARD
+                                                Surface(
+                                                    shape = RoundedCornerShape(10.dp),
+                                                    color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.65f),
+                                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
+                                                    modifier = Modifier.weight(1.1f),
+                                                ) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        modifier = Modifier.padding(horizontal = 2.dp, vertical = 2.dp),
+                                                    ) {
+                                                        IconButton(
+                                                            onClick = {
+                                                                val newReps = (currentSet.reps - 1).coerceAtLeast(0)
+                                                                sets[index] = currentSet.copy(reps = newReps)
+                                                            },
+                                                            modifier = Modifier.size(32.dp),
+                                                        ) {
+                                                            Icon(
+                                                                imageVector = Icons.Default.Remove,
+                                                                contentDescription = "Decrease reps by 1",
+                                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                                modifier = Modifier.size(15.dp),
+                                                            )
+                                                        }
+
+                                                        Column(
+                                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                                            modifier = Modifier.weight(1f),
+                                                        ) {
+                                                            BasicTextField(
+                                                                value = if (currentSet.reps == 0) "" else currentSet.reps.toString(),
+                                                                onValueChange = { str ->
+                                                                    val clean = str.filter { it.isDigit() }
+                                                                    val r = clean.toIntOrNull() ?: 0
+                                                                    sets[index] = currentSet.copy(reps = r)
+                                                                },
+                                                                singleLine = true,
+                                                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                                                textStyle = MaterialTheme.typography.titleMedium.copy(
+                                                                    fontWeight = FontWeight.Bold,
+                                                                    textAlign = TextAlign.Center,
+                                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                                    fontSize = 15.sp,
+                                                                ),
+                                                                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                                                                modifier = Modifier.fillMaxWidth(),
+                                                            )
+                                                            Text(
+                                                                text = "reps",
+                                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                            )
+                                                        }
+
+                                                        IconButton(
+                                                            onClick = {
+                                                                val newReps = currentSet.reps + 1
+                                                                sets[index] = currentSet.copy(reps = newReps)
+                                                            },
+                                                            modifier = Modifier.size(32.dp),
+                                                        ) {
+                                                            Icon(
+                                                                imageVector = Icons.Default.Add,
+                                                                contentDescription = "Increase reps by 1",
+                                                                tint = MaterialTheme.colorScheme.primary,
+                                                                modifier = Modifier.size(15.dp),
+                                                            )
+                                                        }
+                                                    }
+                                                }
+
+                                                // TACTILE COMPLETE BUTTON
+                                                Surface(
                                                     onClick = {
                                                         val next = !currentSet.isCompleted
                                                         sets[index] = currentSet.copy(isCompleted = next)
@@ -719,204 +976,32 @@ internal fun LogWorkoutDialog(
                                                             restTimer.notifySetCompleted(index)
                                                         }
                                                     },
-                                                    modifier = Modifier.size(28.dp),
+                                                    shape = RoundedCornerShape(10.dp),
+                                                    color = if (currentSet.isCompleted) {
+                                                        MaterialTheme.colorScheme.primary
+                                                    } else {
+                                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                                                    },
+                                                    border = BorderStroke(
+                                                        width = 1.dp,
+                                                        color = if (currentSet.isCompleted) {
+                                                            MaterialTheme.colorScheme.primary
+                                                        } else {
+                                                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                                        },
+                                                    ),
+                                                    modifier = Modifier.size(44.dp),
                                                 ) {
-                                                    Icon(
-                                                        imageVector = if (currentSet.isCompleted) Icons.Default.CheckCircle else Icons.Outlined.CheckCircle,
-                                                        contentDescription = if (currentSet.isCompleted) "Set completed" else "Mark set complete",
-                                                        tint = if (currentSet.isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                                        modifier = Modifier.size(20.dp),
-                                                    )
-                                                }
-
-                                                Text(
-                                                    text = "#${index + 1}",
-                                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                                    color = if (currentSet.isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                                                    modifier = Modifier.width(24.dp),
-                                                )
-
-                                                OutlinedTextField(
-                                                    value = if (currentSet.weightKg == 0.0) "" else currentSet.weightKg.roundToInt().toString(),
-                                                    onValueChange = { str ->
-                                                        val clean = str.filter { it.isDigit() }
-                                                        val w = clean.toDoubleOrNull() ?: 0.0
-                                                        sets[index] = currentSet.copy(weightKg = w)
-                                                    },
-                                                    label = { Text("kg") },
-                                                    trailingIcon = {
-                                                        IconButton(
-                                                            onClick = {
-                                                                plateCalculatorTargetWeight = currentSet.weightKg
-                                                                plateCalculatorSetIndex = index
-                                                            },
-                                                            modifier = Modifier.size(24.dp),
-                                                        ) {
-                                                            Icon(
-                                                                imageVector = Icons.Default.FitnessCenter,
-                                                                contentDescription = "Barbell plate calculator",
-                                                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                                                                modifier = Modifier.size(14.dp),
-                                                            )
-                                                        }
-                                                    },
-                                                    singleLine = true,
-                                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                                    modifier = Modifier.weight(1.15f),
-                                                    shape = RoundedCornerShape(8.dp),
-                                                )
-
-                                                OutlinedTextField(
-                                                    value = if (currentSet.reps == 0) "" else currentSet.reps.toString(),
-                                                    onValueChange = { str ->
-                                                        val clean = str.filter { it.isDigit() }
-                                                        val r = clean.toIntOrNull() ?: 0
-                                                        sets[index] = currentSet.copy(reps = r)
-                                                    },
-                                                    label = { Text("reps") },
-                                                    singleLine = true,
-                                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                                    modifier = Modifier.weight(1f),
-                                                    shape = RoundedCornerShape(8.dp),
-                                                )
-
-                                                Column(horizontalAlignment = Alignment.End, modifier = Modifier.width(56.dp)) {
-                                                    Text(
-                                                        text = "${currentSet.volumeKg.roundToInt()}kg",
-                                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                                                        color = MaterialTheme.colorScheme.onSurface,
-                                                    )
-                                                    val set1Rm = OneRepMaxCalculator.estimate(currentSet.weightKg, currentSet.reps)
-                                                    Text(
-                                                        text = if (set1Rm != null) "1RM: ${set1Rm.oneRepMaxKg.roundToInt()}k" else "—",
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    )
-                                                }
-
-                                                // Set Duplicator Button
-                                                IconButton(
-                                                    onClick = {
-                                                        val clone = currentSet.duplicate()
-                                                        sets.add(index + 1, clone)
-                                                    },
-                                                    modifier = Modifier.size(38.dp),
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.ContentCopy,
-                                                        contentDescription = "Duplicate set #${index + 1}",
-                                                        tint = MaterialTheme.colorScheme.primary,
-                                                        modifier = Modifier.size(16.dp),
-                                                    )
-                                                }
-
-                                                if (sets.size > 1) {
-                                                    IconButton(
-                                                        onClick = { sets.removeAt(index) },
-                                                        modifier = Modifier.size(38.dp),
-                                                    ) {
+                                                    Box(contentAlignment = Alignment.Center) {
                                                         Icon(
-                                                            imageVector = Icons.Default.Close,
-                                                            contentDescription = "Remove set",
-                                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                            modifier = Modifier.size(16.dp),
-                                                        )
-                                                    }
-                                                }
-                                            }
-
-                                            // Stepper Quick-Adjust Row for load and reps
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(start = 56.dp, end = 4.dp),
-                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                            ) {
-                                                Surface(
-                                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                                    shape = RoundedCornerShape(8.dp),
-                                                    modifier = Modifier
-                                                        .heightIn(min = 34.dp)
-                                                        .clickable {
-                                                            val newWeight = (currentSet.weightKg - 2.5).coerceAtLeast(0.0)
-                                                            sets[index] = currentSet.copy(weightKg = newWeight)
-                                                        },
-                                                ) {
-                                                    Box(
-                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                                                        contentAlignment = Alignment.Center,
-                                                    ) {
-                                                        Text(
-                                                            text = "-2.5kg",
-                                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Medium),
-                                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                        )
-                                                    }
-                                                }
-
-                                                Surface(
-                                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                                    shape = RoundedCornerShape(8.dp),
-                                                    modifier = Modifier
-                                                        .heightIn(min = 34.dp)
-                                                        .clickable {
-                                                            val newWeight = currentSet.weightKg + 2.5
-                                                            sets[index] = currentSet.copy(weightKg = newWeight)
-                                                        },
-                                                ) {
-                                                    Box(
-                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                                                        contentAlignment = Alignment.Center,
-                                                    ) {
-                                                        Text(
-                                                            text = "+2.5kg",
-                                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Medium),
-                                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                        )
-                                                    }
-                                                }
-
-                                                Surface(
-                                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                                    shape = RoundedCornerShape(8.dp),
-                                                    modifier = Modifier
-                                                        .heightIn(min = 34.dp)
-                                                        .clickable {
-                                                            val newReps = (currentSet.reps - 1).coerceAtLeast(0)
-                                                            sets[index] = currentSet.copy(reps = newReps)
-                                                        },
-                                                ) {
-                                                    Box(
-                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                                                        contentAlignment = Alignment.Center,
-                                                    ) {
-                                                        Text(
-                                                            text = "-1 rep",
-                                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Medium),
-                                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                        )
-                                                    }
-                                                }
-
-                                                Surface(
-                                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                                    shape = RoundedCornerShape(8.dp),
-                                                    modifier = Modifier
-                                                        .heightIn(min = 34.dp)
-                                                        .clickable {
-                                                            val newReps = currentSet.reps + 1
-                                                            sets[index] = currentSet.copy(reps = newReps)
-                                                        },
-                                                ) {
-                                                    Box(
-                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                                                        contentAlignment = Alignment.Center,
-                                                    ) {
-                                                        Text(
-                                                            text = "+1 rep",
-                                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Medium),
-                                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                            imageVector = if (currentSet.isCompleted) Icons.Default.Check else Icons.Outlined.CheckCircle,
+                                                            contentDescription = if (currentSet.isCompleted) "Completed" else "Mark Complete",
+                                                            tint = if (currentSet.isCompleted) {
+                                                                MaterialTheme.colorScheme.onPrimary
+                                                            } else {
+                                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                                            },
+                                                            modifier = Modifier.size(22.dp),
                                                         )
                                                     }
                                                 }
@@ -1024,7 +1109,7 @@ internal fun LogWorkoutDialog(
                                             type = WorkoutType.STRENGTH,
                                             exerciseName = ex.name,
                                             loggedAt = Instant.now(),
-                                            met = 6.0,
+                                            met = ex.met ?: 6.0,
                                             durationMinutes = (validSets.size * 3).coerceAtLeast(15),
                                             bodyWeightKg = userWeightKg,
                                             sets = validSets,
