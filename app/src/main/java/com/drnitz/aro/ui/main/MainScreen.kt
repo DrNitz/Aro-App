@@ -437,6 +437,7 @@ internal fun MainScreenContent(
                             onLoadPreviousWorkout = onLoadPreviousWorkout,
                             customExercises = customExercises,
                             onItemClick = onItemClick,
+                            onOpenAssistant = { showAssistantDialog = true },
                         )
                     }
                 }
@@ -470,6 +471,10 @@ internal fun MainScreenContent(
                                 }
                             },
                             onToggleFavorite = onToggleFavorite,
+                            energyPlan = state.energyPlan,
+                            energyBalance = state.energyBalance,
+                            dayTotals = state.dayTotals,
+                            diaryDay = state.diaryDay,
                         )
                     } else {
                         MissingLibrary(stringResource(R.string.library_food_loading))
@@ -735,6 +740,7 @@ private fun DiaryTabContent(
     onLoadPreviousWorkout: (suspend (String) -> WorkoutLog?)? = null,
     customExercises: List<Exercise> = emptyList(),
     onItemClick: (NavKey) -> Unit = {},
+    onOpenAssistant: () -> Unit = {},
 ) {
     var addFoodSlot by remember { mutableStateOf<MealSlot?>(null) }
     var editingFood by remember { mutableStateOf<FoodLogEntry?>(null) }
@@ -838,6 +844,7 @@ private fun DiaryTabContent(
                         },
                         onDeleteWorkout = onDeleteWorkout,
                         onDuplicateWorkout = { duplicatingWorkout = it },
+                        onOpenAssistant = onOpenAssistant,
                         onItemClick = onItemClick,
                     )
                 }
@@ -880,6 +887,7 @@ private fun DiaryTabContent(
                     },
                     onDeleteWorkout = onDeleteWorkout,
                     onDuplicateWorkout = { duplicatingWorkout = it },
+                    onOpenAssistant = onOpenAssistant,
                     onItemClick = onItemClick,
                 )
             }

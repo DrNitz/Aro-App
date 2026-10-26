@@ -1,5 +1,10 @@
 package com.drnitz.aro.ui.main
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -8,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -17,30 +23,47 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation3.runtime.NavKey
@@ -56,7 +79,12 @@ import com.drnitz.aro.domain.model.MealSlot
 import com.drnitz.aro.domain.model.NutrientTotals
 import com.drnitz.aro.domain.model.WorkoutLog
 import com.drnitz.aro.theme.AroTheme
+import com.drnitz.aro.ui.bodymap.BodySoundHaptics
 import com.drnitz.aro.ui.components.ConcentricMacroRings
+import com.drnitz.aro.ui.mascot.AroMascot
+import com.drnitz.aro.ui.mascot.MascotMood
+import com.drnitz.aro.ui.mascot.getMascotCoaching
+import com.drnitz.aro.ui.mascot.resolveMascotMood
 import com.drnitz.aro.domain.calculation.caloriesBurned
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -87,6 +115,7 @@ internal fun DiarySections(
     onOpenLogWorkout: () -> Unit,
     onDeleteWorkout: (String) -> Unit,
     onDuplicateWorkout: (WorkoutLog) -> Unit = {},
+    onOpenAssistant: () -> Unit = {},
     onItemClick: (NavKey) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -119,14 +148,11 @@ internal fun DiarySections(
             }
         }
 
-        MacroRingsCard(
-            energyBalance = state.energyBalance,
-            energyPlan = state.energyPlan,
-            dayTotals = state.dayTotals,
+        AroCompanionHubCard(
+            state = state,
             onAuditClick = { onItemClick(ClinicalAudit) },
+            onOpenAssistant = onOpenAssistant,
         )
-
-        EnergyBalanceCard(balance = state.energyBalance)
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -297,6 +323,464 @@ internal fun DiarySections(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@Composable
+private fun AroHaloRing(
+    caloriesEaten: Int,
+    caloriesBurned: Int,
+    targetCalories: Int,
+    proteinEatenG: Double,
+    targetProteinG: Double,
+    modifier: Modifier = Modifier,
+    size: Dp = 192.dp,
+    strokeWidth: Dp = 9.dp,
+    content: @Composable () -> Unit,
+) {
+    val netCalories = caloriesEaten - caloriesBurned
+    val targetCalSafe = if (targetCalories > 0) targetCalories else 2000
+    val targetProtSafe = if (targetProteinG > 0) targetProteinG else 150.0
+
+    val rawCalSweep = ((netCalories.toFloat() / targetCalSafe.toFloat()) * 360f).coerceIn(0f, 360f)
+    val rawCalOver = ((((netCalories.toFloat() / targetCalSafe.toFloat()) - 1.0f) * 360f)).coerceIn(0f, 360f)
+    val rawProtSweep = (((proteinEatenG / targetProtSafe) * 360f).toFloat()).coerceIn(0f, 360f)
+
+    val animCalSweep = remember { Animatable(0f) }
+    val animCalOver = remember { Animatable(0f) }
+    val animProtSweep = remember { Animatable(0f) }
+
+    LaunchedEffect(rawCalSweep, rawCalOver, rawProtSweep) {
+        val animSpec = tween<Float>(durationMillis = 900, easing = FastOutSlowInEasing)
+        animCalSweep.animateTo(rawCalSweep, animSpec)
+        animCalOver.animateTo(rawCalOver, animSpec)
+        animProtSweep.animateTo(rawProtSweep, animSpec)
+    }
+
+    val macroColors = AroTheme.macroColors
+
+    Box(
+        modifier = modifier.size(size),
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val strokePx = strokeWidth.toPx()
+            val center = Offset(this.size.width / 2f, this.size.height / 2f)
+
+            // Outer Calorie Halo Track
+            val rCal = this.size.minDimension / 2f - strokePx / 2f - 2.dp.toPx()
+            // Inner Protein Accent Track (slim micro-track)
+            val rProt = rCal - strokePx - 3.dp.toPx()
+            val protStrokePx = strokePx * 0.42f
+
+            // 1. Calorie Ambient Background Track
+            drawCircle(
+                color = macroColors.caloriesBg,
+                radius = rCal,
+                center = center,
+                style = Stroke(width = strokePx),
+            )
+
+            // 2. Protein Ambient Background Track
+            drawCircle(
+                color = macroColors.proteinBg.copy(alpha = 0.5f),
+                radius = rProt,
+                center = center,
+                style = Stroke(width = protStrokePx),
+            )
+
+            // 3. Active Calorie Sweep Arc
+            if (animCalSweep.value > 0f) {
+                rotate(degrees = -90f, pivot = center) {
+                    drawArc(
+                        brush = Brush.sweepGradient(
+                            listOf(macroColors.calories, macroColors.calories.copy(alpha = 0.82f)),
+                            center = center,
+                        ),
+                        startAngle = 0f,
+                        sweepAngle = animCalSweep.value,
+                        useCenter = false,
+                        topLeft = Offset(center.x - rCal, center.y - rCal),
+                        size = Size(rCal * 2, rCal * 2),
+                        style = Stroke(width = strokePx, cap = StrokeCap.Round),
+                    )
+
+                    // Target Overfill Glow Arc
+                    if (animCalOver.value > 0f) {
+                        drawArc(
+                            color = Color.White.copy(alpha = 0.85f),
+                            startAngle = 0f,
+                            sweepAngle = animCalOver.value,
+                            useCenter = false,
+                            topLeft = Offset(center.x - rCal, center.y - rCal),
+                            size = Size(rCal * 2, rCal * 2),
+                            style = Stroke(width = strokePx * 0.45f, cap = StrokeCap.Round),
+                        )
+                    }
+                }
+            }
+
+            // 4. Active Protein Sweep Arc
+            if (animProtSweep.value > 0f) {
+                rotate(degrees = -90f, pivot = center) {
+                    drawArc(
+                        color = macroColors.protein,
+                        startAngle = 0f,
+                        sweepAngle = animProtSweep.value,
+                        useCenter = false,
+                        topLeft = Offset(center.x - rProt, center.y - rProt),
+                        size = Size(rProt * 2, rProt * 2),
+                        style = Stroke(width = protStrokePx, cap = StrokeCap.Round),
+                    )
+                }
+            }
+        }
+
+        // Center Content (Aro companion inside the halo)
+        content()
+    }
+}
+
+@Composable
+private fun CompanionMacroPill(
+    label: String,
+    currentG: Double,
+    targetG: Double,
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    val progress = if (targetG > 0) (currentG / targetG).toFloat().coerceIn(0f, 1f) else 0f
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f),
+        modifier = modifier,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 10.sp),
+                    color = color,
+                )
+                Text(
+                    text = "${currentG.roundToInt()}g",
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(2.dp)),
+                color = color,
+                trackColor = color.copy(alpha = 0.2f),
+            )
+        }
+    }
+}
+
+private enum class CompanionViewMode { CALORIES, PROTEIN, ADVICE }
+
+@Composable
+internal fun AroCompanionHubCard(
+    state: MainScreenUiState.Success,
+    onAuditClick: () -> Unit = {},
+    onOpenAssistant: () -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
+    val mood = resolveMascotMood(state)
+    val coaching = remember(state) { getMascotCoaching(state) }
+    var viewMode by remember { mutableStateOf(CompanionViewMode.CALORIES) }
+
+    val energyBalance = state.energyBalance
+    val energyPlan = state.energyPlan
+    val dayTotals = state.dayTotals
+
+    val remainingCalories = energyBalance.remaining
+    val isOverCalories = energyBalance.isOverTarget
+    val overCalories = energyBalance.surplus
+
+    Card(
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            // 1. Interactive Speech / Coaching Bubble (Tap to open Assistant)
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.85f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable(onClick = {
+                        BodySoundHaptics.playClickSound()
+                        onOpenAssistant()
+                    }),
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(28.dp),
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.ChatBubbleOutline,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(15.dp),
+                            )
+                        }
+                    }
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = coaching.title,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp,
+                            ),
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Text(
+                            text = coaching.message,
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            Text(
+                                text = "Coach",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp,
+                                ),
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(12.dp),
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 2. Stripped-Down Halo Ring filled with interactive Aro Companion
+            AroHaloRing(
+                caloriesEaten = energyBalance.caloriesEaten,
+                caloriesBurned = energyBalance.caloriesBurned,
+                targetCalories = energyPlan.targetCalories,
+                proteinEatenG = dayTotals.proteinG,
+                targetProteinG = energyPlan.macros.proteinG.toDouble(),
+                size = 192.dp,
+                strokeWidth = 9.dp,
+            ) {
+                Box(
+                    modifier = Modifier.size(140.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    AroMascot(
+                        mood = mood,
+                        size = 125.dp,
+                        isTopBar = false,
+                        onClick = {
+                            BodySoundHaptics.playClickSound()
+                        },
+                    )
+                }
+            }
+
+            // 3. Interactive Metric Pill (Tap to cycle Calories / Protein / Mood)
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = when (viewMode) {
+                    CompanionViewMode.CALORIES -> AroTheme.macroColors.calories.copy(alpha = 0.15f)
+                    CompanionViewMode.PROTEIN -> AroTheme.macroColors.protein.copy(alpha = 0.15f)
+                    CompanionViewMode.ADVICE -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                },
+                border = BorderStroke(
+                    1.dp,
+                    when (viewMode) {
+                        CompanionViewMode.CALORIES -> AroTheme.macroColors.calories.copy(alpha = 0.4f)
+                        CompanionViewMode.PROTEIN -> AroTheme.macroColors.protein.copy(alpha = 0.4f)
+                        CompanionViewMode.ADVICE -> MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+                    },
+                ),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable {
+                        viewMode = when (viewMode) {
+                            CompanionViewMode.CALORIES -> CompanionViewMode.PROTEIN
+                            CompanionViewMode.PROTEIN -> CompanionViewMode.ADVICE
+                            CompanionViewMode.ADVICE -> CompanionViewMode.CALORIES
+                        }
+                        BodySoundHaptics.playClickSound()
+                    },
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    when (viewMode) {
+                        CompanionViewMode.CALORIES -> {
+                            Icon(
+                                imageVector = Icons.Default.LocalFireDepartment,
+                                contentDescription = null,
+                                tint = AroTheme.macroColors.calories,
+                                modifier = Modifier.size(15.dp),
+                            )
+                            Text(
+                                text = if (isOverCalories) "+$overCalories kcal over" else "$remainingCalories kcal left",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 12.sp),
+                                color = if (isOverCalories) AroTheme.macroColors.calories else MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                        CompanionViewMode.PROTEIN -> {
+                            Icon(
+                                imageVector = Icons.Default.FitnessCenter,
+                                contentDescription = null,
+                                tint = AroTheme.macroColors.protein,
+                                modifier = Modifier.size(15.dp),
+                            )
+                            Text(
+                                text = "${dayTotals.proteinG.roundToInt()}/${energyPlan.macros.proteinG}g Protein",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 12.sp),
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                        CompanionViewMode.ADVICE -> {
+                            Icon(
+                                imageVector = Icons.Default.Favorite,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(14.dp),
+                            )
+                            Text(
+                                text = mood.label,
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 12.sp),
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 4. Streamlined Macro Progress Strip
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                CompanionMacroPill(
+                    label = "Protein",
+                    currentG = dayTotals.proteinG,
+                    targetG = energyPlan.macros.proteinG.toDouble(),
+                    color = AroTheme.macroColors.protein,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(Modifier.width(6.dp))
+                CompanionMacroPill(
+                    label = "Carbs",
+                    currentG = dayTotals.carbsG,
+                    targetG = energyPlan.macros.carbsG.toDouble(),
+                    color = AroTheme.macroColors.carbs,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(Modifier.width(6.dp))
+                CompanionMacroPill(
+                    label = "Fat",
+                    currentG = dayTotals.fatG,
+                    targetG = energyPlan.macros.fatG.toDouble(),
+                    color = AroTheme.macroColors.fat,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(Modifier.width(6.dp))
+                CompanionMacroPill(
+                    label = "Fiber",
+                    currentG = dayTotals.fiberG,
+                    targetG = energyPlan.macros.fiberG.toDouble(),
+                    color = AroTheme.macroColors.fiber,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+
+            // 5. Energy Balance Equation & Clinical Audit Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = "Goal ${energyBalance.targetCalories} − Eaten ${energyBalance.caloriesEaten} + Burned ${energyBalance.caloriesBurned}",
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable(onClick = onAuditClick),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.HealthAndSafety,
+                            contentDescription = null,
+                            tint = AroTheme.macroColors.fiber,
+                            modifier = Modifier.size(13.dp),
+                        )
+                        Text(
+                            text = "Audit",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
